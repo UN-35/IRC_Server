@@ -6,7 +6,7 @@
 /*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:16 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/16 21:45:03 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/05/18 18:19:48 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@ void Client::setRegistration( bool is_regist ) { this->regist = is_regist; }
 void Client::erase_buff() { this->buffer.erase(); }
 
 std::string Client::getNickName() { return this->nickName; }
-std::string Client::getUsetrName() { return this->userName; }
+std::string Client::getUserName() { return this->userName; }
 std::string Client::getBuffer() { return this->buffer; }
 bool Client::getOperator() { return this->operat; }
 bool Client::getAuth() { return this->auth; }

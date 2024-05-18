@@ -6,7 +6,7 @@
 /*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/16 22:34:27 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/05/18 18:19:01 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ server::server( int _port, std::string _pass ) : port( _port ), passwd( _pass ) 
     serv_poll.events = POLLIN;
 
     poll_vec.push_back( serv_poll );
-    //handle init msg err;
+    errMsg_insert();  //initialize the numeric replies errors;
 }
 
 
@@ -107,14 +107,14 @@ void server::newUser() {
     poll_vec.push_back( pollClient );
     Client _client( fdClient, passwd );
     Clients.insert( std::make_pair( fdClient, _client ) );
-    std::cout << "The Client [ " << fdClient << " ] connected!" << std::endl;
+    // std::cout << "The Client [ " << fdClient << " ] connected!" << std::endl;
 }
 
 void server::ClientRecv( int clientFileD ) {
     std::vector<char> buffer(5000);
     ssize_t index = read( clientFileD, buffer.data(), buffer.size() );
     if ( !index ) { //means that the client disconnected
-        std::cerr << "Client [" << clientFileD << "] Disconnected" << std::endl;
+        std::cerr << "Client [" << Clients[clientFileD].getNickName() << "] Disconnected" << std::endl;
         //
         // ATTENTION... you might Need to add a call for /QUIT command Func in here;
         // 
@@ -130,10 +130,6 @@ void server::ClientRecv( int clientFileD ) {
     // get the line from buffer and parse it with deleting /r /n (for numeric replies);
     std::vector<std::string> splitted = splitVec( Clients[clientFileD].getBuffer(), '\n' );
     Clients[clientFileD].erase_buff();
-    
-
-
-    ///...... that ain't working yet -->!
 
     for ( std::vector<std::string>::iterator it = splitted.begin(); it != splitted.end(); it++ ) {
         std::string line = cleanLine( *it );
@@ -142,12 +138,63 @@ void server::ClientRecv( int clientFileD ) {
         
         size_t sp = line.find(" ");
         if ( sp == std::string::npos || sp == 0 || line[sp + 1] == '\0' ) {
-            /// sendError... handle the numeric replies;;;;
+            handleNumReps( clientFileD, 461, line ); // ERR_NEEDMOREPARAMS
             return ;
         }
         
         std::string cmd = line.substr( 0, sp );
         
+        // if ( cmd == "CAP" )
+        //     continue;
+
+        if ( Clients[clientFileD].getAuth() == false ) {
+            if ( cmd != "PASS" && cmd != "pass" ) {
+                handleNumReps( clientFileD, 451, line ); // ERR_NOTREGISTERED
+            } else {
+                std::string pass( line.substr( sp + 1 ));
+                if ( pass != passwd ){
+                    handleNumReps( clientFileD, 464 , line ); // ERR_PASSWDMISMATCH
+                } else
+                    Clients[clientFileD].setAuth( true );
+            }
+        } else {
+            if ( Clients[clientFileD].getNickName().empty() || Clients[clientFileD].getUserName().empty() ) {
+                if ( cmd == "NICK" || cmd == "nick" ) {
+                    std::vector<std::string> NName = splitVec( line.substr( sp + 1 ), 1 );
+                    if ( NName.size() != 1 ) {
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    } else if ( searchByNName(NName[0]) != -1 ) {
+                        handleNumReps( clientFileD, 433, NName[0] ); //ERR_NICKNAMEINUSE
+                    } else {
+                        if ( Clients[clientFileD].getNickName().empty() ) {
+                            Clients[clientFileD].setNickName( NName[0] );
+                            std::string errM = " :" + Clients[clientFileD].getNickName() + " NICK " + Clients[clientFileD].getNickName() + "\r\n";
+                            send( clientFileD, errM.c_str(), errM.size(), 0 );
+                        } else {
+                            handleNumReps( clientFileD, 433, line ); //ERR_NICKNAMEINUSE
+                        }
+                    }
+                } else if ( cmd == "USER" || cmd == "user" ) {
+                    std::vector<std::string> username = splitVec( line.substr( sp + 1 ), ' ' );
+                    if ( Clients[clientFileD].getUserName().empty() ) {
+                        Clients[clientFileD].setUserName( username[0] );
+                    } else {
+                        handleNumReps( clientFileD, 462, line ); //ERR_ALREADYREGISTERED
+                    }
+                } else {
+                    handleNumReps( clientFileD, 451, line); //ERR_NOTREGISTERED
+                }
+                if ( !Clients[clientFileD].getUserName().empty() && !Clients[clientFileD].getNickName().empty() ) {
+                    std::string n = Clients[clientFileD].getNickName();
+                    std::string u = Clients[clientFileD].getUserName();
+                    std::string welcome = ":" + hostname + " 001 " + n + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\r\n";
+                    send( clientFileD, welcome.c_str(), welcome.size(), 0 );
+                    std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
+                }
+            } else {
+                ;/// here we start handle the commaaands---->>>>>>>>>
+            }
+        }
     }
 }
 
@@ -176,4 +223,13 @@ std::string server::cleanLine( std::string line ) {
             line.erase( i, 1 );
     }
     return line;
+}
+
+
+int server::searchByNName( std::string NName ) {
+    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+        if ( it->second.getNickName() == NName )
+            return it->first;
+    }
+    return -1;
 }

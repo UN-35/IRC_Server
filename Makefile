@@ -6,7 +6,7 @@
 #    By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/09 13:58:28 by yoelansa          #+#    #+#              #
-#    Updated: 2024/05/14 20:00:31 by yoelansa         ###   ########.fr        #
+#    Updated: 2024/05/18 18:12:12 by yoelansa         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@ SHELL := /bin/zsh
 
 NAME = ircserv
 
-SRC = main.cpp server/server.cpp client/client.cpp
+SRC = main.cpp server/server.cpp client/client.cpp server/numReplies.cpp
 
 RM = @rm -rf
 
