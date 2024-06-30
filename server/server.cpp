@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/18 18:19:01 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/06/30 15:28:03 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,7 +107,7 @@ void server::newUser() {
     poll_vec.push_back( pollClient );
     Client _client( fdClient, passwd );
     Clients.insert( std::make_pair( fdClient, _client ) );
-    // std::cout << "The Client [ " << fdClient << " ] connected!" << std::endl;
+    std::cout << "The Client [ " << fdClient << " ] connected!" << std::endl;
 }
 
 void server::ClientRecv( int clientFileD ) {
@@ -192,7 +192,33 @@ void server::ClientRecv( int clientFileD ) {
                     std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
                 }
             } else {
-                ;/// here we start handle the commaaands---->>>>>>>>>
+                if (cmd == "PRIVMSG" || cmd == "privmsg") {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    if ( msg.size() < 2 ) {
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    } else {
+                        int fd = searchByNName( msg[0] );
+                        if ( fd == -1 ) {
+                            handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
+                        } else {
+                            std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + msg[1] + "\r\n";
+                            send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
+                        }
+                    }
+                } else if ( cmd == "QUIT" || cmd == "quit" ) {
+                    std::string quitMsg = line.substr( sp + 1 );
+                    std::string quit = ":" + Clients[clientFileD].getNickName() + " QUIT :" + quitMsg + "\r\n";
+                    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                        if ( it->first != clientFileD )
+                            send( it->first, quit.c_str(), quit.size(), 0 );
+                    }
+                    std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
+                    close( clientFileD );
+                    poll_vec.erase( poll_vec.begin() + clientFileD );
+                    Clients.erase( clientFileD );
+                } else if ( cmd == "KICK" || cmd == "kick") {
+                  //   
+                }
             }
         }
     }
