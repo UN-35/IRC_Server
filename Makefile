@@ -6,7 +6,7 @@
 #    By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/09 13:58:28 by yoelansa          #+#    #+#              #
-#    Updated: 2024/06/30 15:01:59 by aakhtab          ###   ########.fr        #
+#    Updated: 2024/07/04 15:44:00 by aakhtab          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,7 +15,7 @@ SHELL := /bin/zsh
 NAME = ircserv
 
 SRC = main.cpp server/server.cpp client/client.cpp server/numReplies.cpp	\
-		Channel/Channel.cpp 
+		channel/Channel.cpp 
 
 RM = @rm -rf
 
