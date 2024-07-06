@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/06/30 15:28:03 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/05 09:54:43 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -197,11 +197,13 @@ void server::ClientRecv( int clientFileD ) {
                     if ( msg.size() < 2 ) {
                         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                     } else {
+                        size_t i = msg[0].length() + 2;
+                        std::string message = line.substr( sp + i );
                         int fd = searchByNName( msg[0] );
                         if ( fd == -1 ) {
                             handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                         } else {
-                            std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + msg[1] + "\r\n";
+                            std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
                             send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                         }
                     }
