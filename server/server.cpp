@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/05 09:54:43 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/09 15:02:09 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -114,11 +114,15 @@ void server::ClientRecv( int clientFileD ) {
     std::vector<char> buffer(5000);
     ssize_t index = read( clientFileD, buffer.data(), buffer.size() );
     if ( !index ) { //means that the client disconnected
-        std::cerr << "Client [" << Clients[clientFileD].getNickName() << "] Disconnected" << std::endl;
+
+        // replaced exit with quit command
+
+        // still fixing this part
+        std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
+        close( clientFileD );
+        poll_vec.erase( poll_vec.begin() + clientFileD );
+        Clients.erase( clientFileD );
         //
-        // ATTENTION... you might Need to add a call for /QUIT command Func in here;
-        // 
-        exit(1); // maybe u'll never gonna need this exit after adding the /QUIT command ;
     }
     if ( buffer[index - 1] != '\n' ) {
         Clients[clientFileD].setBuffer( buffer.data() );
@@ -218,8 +222,8 @@ void server::ClientRecv( int clientFileD ) {
                     close( clientFileD );
                     poll_vec.erase( poll_vec.begin() + clientFileD );
                     Clients.erase( clientFileD );
-                } else if ( cmd == "KICK" || cmd == "kick") {
-                  //   
+                } else if ( cmd == "JOIN" || cmd == "join"){
+                    
                 }
             }
         }
