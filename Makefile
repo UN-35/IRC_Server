@@ -6,9 +6,11 @@
 #    By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/09 13:58:28 by yoelansa          #+#    #+#              #
-#    Updated: 2024/07/04 15:44:00 by aakhtab          ###   ########.fr        #
+#    Updated: 2024/07/16 12:24:13 by aakhtab          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
+
+AUTHOR = yoelansa && aakhtab
 
 SHELL := /bin/zsh 
 
@@ -22,36 +24,38 @@ RM = @rm -rf
 CC = @c++
 
 CPPFLAGS = -Wextra -Werror -Wall -std=c++98
-
+OBJ = $(SRC:.cpp=.o)
 CONTROL = @stty -echoctl
 
-
-
-RESET := "\x1b[0m"
-BOLD := "\x1b[1m"
-RED := "\x1b[31m"
-GREEN := "\x1b[32m"
-YELLOW := "\x1b[33m"
-BLUE := "\x1b[34m"
-WHITE := "\x1b[37m"
-
-
+RED = \033[0;31m
+YELLOW = \033[0;33m
+RESET = \033[0m
+GREEN = \033[0;32m
+CYAN = \033[0;36m
+BOLD = \033[1m
+GREY = \033[1;30m
 
 
 all : $(NAME)
 
 
 $(NAME) : ${SRC}
+	@printf "$(YELLOW)Compiling...$(RESET)\n"
 	${CC}  ${CPPFLAGS} $(SRC) -o $(NAME)
-	@echo $(BOLD)$(GREEN)"\n\t✅ Mandatory Compiled\n\t" $(WHITE)"Program  "$(YELLOW)"./$(NAME)\n" $(RESET)
+	@printf  "$(GREEN)Author\t\t: $(CYAN)$(AUTHOR)\n"
+	@printf  "$(GREEN)CC    \t\t: $(YELLOW)$(CC)\n\033[m"
+	@printf  "$(GREEN)FLAGS \t\t: $(YELLOW)$(CPPFLAGS)\n\033[m"
+	@printf  "$(GREEN)Program  \t: $(YELLOW)$(NAME)\n\033[m"
+	@printf "$(YELLOW)\nUSAGE: \n\t$(BOLD)$(GREY)./ircserv <port> <password>$(RESET)\n"
 
 clean :
-	${RM} *.o
-	@echo $(BOLD)$(RED)"\n\t✅ Cleaning Files\n" $(RESET)
+	${RM} $(OBJ)
+	@printf "$(RED)$(NAME) deleted !$(RESET)\n"
+	
 
 fclean :
 	${RM} $(NAME)
-	@echo $(BOLD)$(RED)"\n\t✅ Delete" $(WHITE)"$(NAME)\n" $(RESET)
+	@printf "$(RED)$(NAME) deleted !$(RESET)\n"
 
 
 re : fclean all

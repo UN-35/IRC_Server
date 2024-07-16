@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/09 15:02:09 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/15 14:53:26 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,7 +120,6 @@ void server::ClientRecv( int clientFileD ) {
         // still fixing this part
         std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
         close( clientFileD );
-        poll_vec.erase( poll_vec.begin() + clientFileD );
         Clients.erase( clientFileD );
         //
     }
@@ -220,7 +219,6 @@ void server::ClientRecv( int clientFileD ) {
                     }
                     std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
                     close( clientFileD );
-                    poll_vec.erase( poll_vec.begin() + clientFileD );
                     Clients.erase( clientFileD );
                 } else if ( cmd == "JOIN" || cmd == "join"){
                     
