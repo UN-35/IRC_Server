@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   numReplies.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/18 13:43:32 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/07/23 17:33:16 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ void server::errMsg_insert() {
     errMsg.insert( std::make_pair( 475, " :Cannot join channel (+k)\r\n" ) );
     errMsg.insert( std::make_pair( 481, " :Permission Denied- You're not an IRC operator\r\n" ) );
     errMsg.insert( std::make_pair( 482, " :You're not channel operator\r\n" ) );
+    errMsg.insert( std::make_pair( 441, " :They aren't on that channel\r\n") );
     // errMsg.insert( std::make_pair( 501, " :Unknown MODE flag\r\n" ) );
 }
 
@@ -86,6 +87,8 @@ void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
         err = ":" + hostname + " 481 " + nickname + errMsg[errCode];
     else if ( errCode == 482 ) // ERR_CHANOPRIVSNEEDED
         err = ":" + hostname + " 482 " + nickname + errMsg[errCode];
+    else if ( errCode == 441 )
+        err = ":" + hostname + " 441 " + nickname + errMsg[errCode];
     // else if ( errCode == 501 ) // ERR_UMODEUNKNOWNFLAG
     //     err = client + errMsg[errCode];
 

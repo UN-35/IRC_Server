@@ -12,9 +12,7 @@ class Channel
 	private:
 		std::map<std::string, Client>	_clientList;
 		std::vector<std::string>		_kicked_users;
-		std::vector<std::string>		_banned_users;
 		std::vector<std::string>		_operators;
-		std::vector<std::string>		_voiced_users;
 		std::string 					_name;
 		std::string						_operatorPassword;
 		std::string						_topic;
@@ -40,18 +38,12 @@ class Channel
 		void							setChannelPassword(std::string password);
 		void							setCapacityLimit(int limit);
 		bool							clientExist(std::string &clientName);
-        void                            sendToChannelUsers(std::string &message, std::string &sender);
+        // void                            sendToChannelUsers(std::string &message, std::string &sender);
 		/* Clients */
 		void							addClientToChannel(Client &client);
 		void							removeClientFromChannel(std::string &clientName);
 		/* Client status */
 		void							addToKicked(std::string &banned_name);
-		void							addToBanned(std::string &banned_name);
-		void							removeFromBanned(std::string &banned_name);
-		bool							isBanned(std::string &banned_name);
-		void							addToVoiced(std::string &voiced_name);
-		void							removeFromVoiced(std::string &voiced_name);
-		bool							isVoiced(std::string &voiced_name);
 
 		/* Operators */
 		void							addFirstOperator(std::string operatorName);

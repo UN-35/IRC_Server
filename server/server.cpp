@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/23 14:25:52 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/23 18:41:44 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -196,7 +196,8 @@ void server::ClientRecv( int clientFileD ) {
                     send( clientFileD, welcome.c_str(), welcome.size(), 0 );
                     std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
                 }
-            } else {
+            } // PRIVMSG COMMAND
+             else {
                 if (cmd == "PRIVMSG" || cmd == "privmsg") {
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
                     std::string nick = Clients[clientFileD].getNickName();
@@ -206,13 +207,16 @@ void server::ClientRecv( int clientFileD ) {
                         size_t i = msg[0].length() + 2;
                         std::string message = line.substr( sp + i );
                         std::string channel_name = msg[0];
-                        // std::cout << "Channel name: " << channel_name << std::endl;
                         if ( channel_name[0] == '#')
                         {
                             Channel* channel = searchChannel( msg[0]);
                             if ( channel == NULL ) {
                                 handleNumReps( clientFileD, 403, msg[0] ); //ERR_NOSUCHCHANNEL
-                            } else {
+                            }
+                            else if ( channel->clientExist( nick ) == false ){
+                                handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                            }
+                            else {
                                 std::map <std::string, Client> clients = channel->getClientList();
                                 for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
                                     if ( it->first != nick ) {
@@ -232,7 +236,8 @@ void server::ClientRecv( int clientFileD ) {
                             }
                         }
                     }
-                } else if ( cmd == "QUIT" || cmd == "quit" ) {
+                } // QUIT COMMAND 
+                else if ( cmd == "QUIT" || cmd == "quit" ) {
                     std::string quitMsg = line.substr( sp + 1 );
                     std::string quit = ":" + Clients[clientFileD].getNickName() + " QUIT :" + quitMsg + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
@@ -242,7 +247,8 @@ void server::ClientRecv( int clientFileD ) {
                     std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
                     close( clientFileD );
                     Clients.erase( clientFileD );
-                } else if ( cmd == "JOIN" || cmd == "join"){
+                } // JOIN COMMMAND
+                else if ( cmd == "JOIN" || cmd == "join"){
                     std::string channel_name = line.substr( sp + 1 );
                     if ( channel_name[0] != '#' ) {
                         handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
@@ -262,6 +268,44 @@ void server::ClientRecv( int clientFileD ) {
                         }
                         if (Clients[clientFileD].getOperator() == true) {
                             channel->addFirstOperator( Clients[clientFileD].getNickName() );
+                        }
+                    }
+                } // KICK command 
+                else if (cmd == "KICK" || cmd == "kick"){
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::string kick;
+                    if ( msg.size() < 2 ) {
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    } else {
+                        std::string channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        if ( channel == NULL ) {
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel->clientExist( nick ) == false ) {
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        } else if ( nick != msg[1] ){
+                            if ( channel->isOperator( nick ) == false ) {
+                                handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                            } else {
+                                std::string kicked = msg[1];
+                                if ( channel->clientExist( kicked ) == false ) {
+                                    handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
+                                } else {
+                                    channel->removeClientFromChannel( kicked );
+                                    if ( msg.size() > 2){
+                                        std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
+                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
+                                        
+                                    }else {
+                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + "\r\n";
+                                    }
+                                    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                                        if ( it->first != clientFileD )
+                                            send( it->first, kick.c_str(), kick.size(), 0 );
+                                    }
+                                }
+                            }
                         }
                     }
                 }
