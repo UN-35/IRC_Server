@@ -6,11 +6,13 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/15 14:53:26 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/23 14:25:52 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
+#include "../client/client.hpp"
+#include "../channel/Channel.hpp"
 
 
 server::server() {}
@@ -197,17 +199,37 @@ void server::ClientRecv( int clientFileD ) {
             } else {
                 if (cmd == "PRIVMSG" || cmd == "privmsg") {
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string nick = Clients[clientFileD].getNickName();
                     if ( msg.size() < 2 ) {
                         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                     } else {
                         size_t i = msg[0].length() + 2;
                         std::string message = line.substr( sp + i );
-                        int fd = searchByNName( msg[0] );
-                        if ( fd == -1 ) {
-                            handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
-                        } else {
-                            std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
-                            send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
+                        std::string channel_name = msg[0];
+                        // std::cout << "Channel name: " << channel_name << std::endl;
+                        if ( channel_name[0] == '#')
+                        {
+                            Channel* channel = searchChannel( msg[0]);
+                            if ( channel == NULL ) {
+                                handleNumReps( clientFileD, 403, msg[0] ); //ERR_NOSUCHCHANNEL
+                            } else {
+                                std::map <std::string, Client> clients = channel->getClientList();
+                                for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
+                                    if ( it->first != nick ) {
+                                        std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " :" + message + "\r\n";
+                                        send( it->second.getFd(), msgToSend.c_str(), msgToSend.size(), 0 );
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            int fd = searchByNName( msg[0] );
+                            if ( fd == -1 ) {
+                                handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
+                            } else {
+                                std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
+                                send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
+                            }
                         }
                     }
                 } else if ( cmd == "QUIT" || cmd == "quit" ) {
@@ -221,7 +243,27 @@ void server::ClientRecv( int clientFileD ) {
                     close( clientFileD );
                     Clients.erase( clientFileD );
                 } else if ( cmd == "JOIN" || cmd == "join"){
-                    
+                    std::string channel_name = line.substr( sp + 1 );
+                    if ( channel_name[0] != '#' ) {
+                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                    } else {
+                        Channel* channel = searchChannel( channel_name );
+                        if ( channel == NULL ) {
+                            Channel newChannel( channel_name );
+                            Channels.push_back( newChannel );
+                            channel = &Channels.back();
+                            Clients[clientFileD].setOperator( true );
+                        }
+                        channel->addClientToChannel( Clients[clientFileD] );
+                        std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
+                        for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                            if ( it->first != clientFileD )
+                                send( it->first, join.c_str(), join.size(), 0 );
+                        }
+                        if (Clients[clientFileD].getOperator() == true) {
+                            channel->addFirstOperator( Clients[clientFileD].getNickName() );
+                        }
+                    }
                 }
             }
         }
@@ -262,4 +304,12 @@ int server::searchByNName( std::string NName ) {
             return it->first;
     }
     return -1;
+}
+
+Channel* server::searchChannel( std::string channelName ) {
+    for ( std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++ ) {
+        if ( it->getName() == channelName )
+            return &(*it);
+    }
+    return NULL;
 }

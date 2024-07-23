@@ -42,6 +42,15 @@ void	Channel::removeClientFromChannel(std::string &clientName)
     _clientList.erase(clientName);
 }
 
+// void    Channel::sendToChannelUsers(std::string &message, std::string &sender)
+// {
+//     std::map<std::string, Client>::iterator it;
+//     for (it = _clientList.begin(); it != _clientList.end(); it++)
+//     {
+//         if (it->first != sender)
+//             send(it->second., message.c_str(), message.size(), 0);
+//     }
+// }
 /* Clients status */
 
 void	Channel::addToKicked(std::string &kicked_name)
@@ -145,4 +154,11 @@ void Channel::removeFromVoiced(std::string &voiced_name)
         }
     }
     std::cout << voiced_name << " is not voiced in the channel " << getName() << std::endl;
+}
+
+/* Operators */
+void Channel::addFirstOperator(std::string operatorName)
+{
+    _operators.push_back(operatorName);
+    std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
 }

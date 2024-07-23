@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:17:38 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/18 17:04:35 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/07/23 12:39:54 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,8 +26,10 @@
 #include <sstream>
 
 #include "../client/client.hpp"
+#include "../channel/Channel.hpp"
 
 // class Client;
+class Channel;
 
 class server {
     private:
@@ -40,6 +42,7 @@ class server {
         std::map<int, Client> Clients; // fds, cl
         std::vector<pollfd> poll_vec; // fds, events, revents
         std::map<int, std::string> errMsg;
+        std::vector<Channel> Channels;
 
         server();
     public:
@@ -49,6 +52,7 @@ class server {
         int multiplex();
         void newUser();
         void ClientRecv( int clientFileD );
+        Channel* searchChannel( std::string channelName );
 
     // utils funcs:
         std::vector<std::string> splitVec( std::string str, char c );

@@ -40,6 +40,7 @@ class Channel
 		void							setChannelPassword(std::string password);
 		void							setCapacityLimit(int limit);
 		bool							clientExist(std::string &clientName);
+        void                            sendToChannelUsers(std::string &message, std::string &sender);
 		/* Clients */
 		void							addClientToChannel(Client &client);
 		void							removeClientFromChannel(std::string &clientName);
@@ -53,10 +54,10 @@ class Channel
 		bool							isVoiced(std::string &voiced_name);
 
 		/* Operators */
-		// void							addFirstOperator(std::string operatorName);
-		// void							removeOperator(std::string operatoName);
-		// void							addOperator(std::string operatorName);
-		// bool							isOperator(std::string &operatorName);
+		void							addFirstOperator(std::string operatorName);
+		void							removeOperator(std::string operatoName);
+		void							addOperator(std::string operatorName);
+		bool							isOperator(std::string &operatorName);
 		/* Modes */
 		// void							addMode(std::string const mode);
 		// void							removeMode(std::string const mode);

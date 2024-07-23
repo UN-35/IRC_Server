@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:13 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/18 17:46:18 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/07/23 14:17:58 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ class Client {
         bool getOperator();
         bool getAuth();
         bool getRegistration();
+        int getFd();
         
 };
 

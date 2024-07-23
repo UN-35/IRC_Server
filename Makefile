@@ -6,7 +6,7 @@
 #    By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2024/04/09 13:58:28 by yoelansa          #+#    #+#              #
-#    Updated: 2024/07/16 12:24:13 by aakhtab          ###   ########.fr        #
+#    Updated: 2024/07/18 09:31:13 by aakhtab          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -46,7 +46,7 @@ $(NAME) : ${SRC}
 	@printf  "$(GREEN)CC    \t\t: $(YELLOW)$(CC)\n\033[m"
 	@printf  "$(GREEN)FLAGS \t\t: $(YELLOW)$(CPPFLAGS)\n\033[m"
 	@printf  "$(GREEN)Program  \t: $(YELLOW)$(NAME)\n\033[m"
-	@printf "$(YELLOW)\nUSAGE: \n\t$(BOLD)$(GREY)./ircserv <port> <password>$(RESET)\n"
+	@printf "$(YELLOW)\nUSAGE: \n\t$(BOLD)$(RESET)./ircserv <port> <password>$(RESET)\n"
 
 clean :
 	${RM} $(OBJ)
