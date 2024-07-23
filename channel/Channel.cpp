@@ -86,3 +86,50 @@ bool Channel::isOperator(std::string &operatorName)
     // std::cout << operatorName << " is not an operator in the channel " << getName() << std::endl;
     return (false);
 }
+
+void Channel::removeOperator(std::string operatoName){
+    std::vector<std::string>::iterator it;
+    for (it = _operators.begin(); it != _operators.end(); it++)
+    {
+        if (*it == operatoName)
+        {
+            _operators.erase(it);
+            std::cout << RED << operatoName << " is no longer an operator in the channel " << getName() << RESET << std::endl;
+            return ;
+        }
+    }
+    std::cout << operatoName << " is not an operator in the channel " << getName() << std::endl;
+}
+
+void Channel::addOperator(std::string operatorName)
+{
+    std::vector<std::string>::iterator it;
+    for (it = _operators.begin(); it != _operators.end(); it++)
+    {
+        if (*it == operatorName)
+        {
+            std::cout << operatorName << " is already an operator in the channel " << getName() << std::endl;
+            return ;
+        }
+    }
+    _operators.push_back(operatorName);
+    std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
+}
+
+/* Modes */
+
+void Channel::addMode( std::string mode)
+{
+    if (mode == "o")
+        _mode += "o";
+    else if (mode == "t")
+        _mode += "t";
+    else if (mode == "k")
+        _mode += "k";
+    else if (mode == "l")
+        _mode += "l";
+    else if (mode == "i")
+        _mode += "i";
+    else
+        std::cout << "Unknown mode" << std::endl;
+}
