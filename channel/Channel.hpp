@@ -51,7 +51,7 @@ class Channel
 		void							addOperator(std::string operatorName);
 		bool							isOperator(std::string &operatorName);
 		/* Modes */
-		void							addMode(std::string mode);
-		// void							removeMode(std::string const mode);
-		// void							removeChannelPassword();
+		void							addMode(std::string const mode);
+		void							removeMode(std::string const mode);
+		void							removeChannelPassword();
 };

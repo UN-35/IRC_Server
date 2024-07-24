@@ -118,7 +118,7 @@ void Channel::addOperator(std::string operatorName)
 
 /* Modes */
 
-void Channel::addMode( std::string mode)
+void Channel::addMode( std::string const mode)
 {
     if (mode == "o")
         _mode += "o";

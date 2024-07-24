@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/23 19:12:25 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/24 13:29:02 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,7 +146,7 @@ void server::ClientRecv( int clientFileD ) {
             handleNumReps( clientFileD, 461, line ); // ERR_NEEDMOREPARAMS
             return ;
         }
-        
+        std::string nick = Clients[clientFileD].getNickName();
         std::string cmd = line.substr( 0, sp );
         
         // if ( cmd == "CAP" )
@@ -173,7 +173,7 @@ void server::ClientRecv( int clientFileD ) {
                     } else {
                         if ( Clients[clientFileD].getNickName().empty() ) {
                             Clients[clientFileD].setNickName( NName[0] );
-                            std::string errM = " :" + Clients[clientFileD].getNickName() + " NICK " + Clients[clientFileD].getNickName() + "\r\n";
+                            std::string errM = " :" + nick + " NICK " + nick + "\r\n";
                             send( clientFileD, errM.c_str(), errM.size(), 0 );
                         } else {
                             handleNumReps( clientFileD, 433, line ); //ERR_NICKNAMEINUSE
@@ -192,15 +192,14 @@ void server::ClientRecv( int clientFileD ) {
                 if ( !Clients[clientFileD].getUserName().empty() && !Clients[clientFileD].getNickName().empty() ) {
                     std::string n = Clients[clientFileD].getNickName();
                     std::string u = Clients[clientFileD].getUserName();
-                    std::string welcome = ":" + hostname + " 001 " + n + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\r\n";
+                    std::string welcome = "\033[1;34m :" + hostname + "\033[0m 001 " + "\033[1;33m" + n + "\033[1;32m" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\r\n";
                     send( clientFileD, welcome.c_str(), welcome.size(), 0 );
                     std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
                 }
             } // PRIVMSG COMMAND
              else {
-                if (cmd == "PRIVMSG" || cmd == "privmsg") {
+                if (cmd == "PRIVMSG") {
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string nick = Clients[clientFileD].getNickName();
                     if ( msg.size() < 2 ) {
                         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                     } else {
@@ -220,7 +219,7 @@ void server::ClientRecv( int clientFileD ) {
                                 std::map <std::string, Client> clients = channel->getClientList();
                                 for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
                                     if ( it->first != nick ) {
-                                        std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " :" + message + "\r\n";
+                                        std::string msgToSend = ": \033[0m" + nick + "\033[1:32m PRIVMSG \033[0m" + channel_name + " :" + message + "\033[1:32m" + "\r\n";
                                         send( it->second.getFd(), msgToSend.c_str(), msgToSend.size(), 0 );
                                     }
                                 }
@@ -231,7 +230,7 @@ void server::ClientRecv( int clientFileD ) {
                             if ( fd == -1 ) {
                                 handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                             } else {
-                                std::string msgToSend = ":" + Clients[clientFileD].getNickName() + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
+                                std::string msgToSend = ": \033[0m" + nick + "\033[1:32m PRIVMSG \033[0m" + msg[0] + " :" + message + "\r\n";
                                 send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                             }
                         }
