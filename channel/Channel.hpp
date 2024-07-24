@@ -25,14 +25,12 @@ class Channel
 
         /* Getters and Setters */
 		std::string&					getName();
-		std::string&					getTopic() ;
-		std::string&					getMode() ;
-		std::string&					getChannelPassword() ;
-		int&							getCapacityLimit() ;
-		std::vector<std::string>&		getOperators() ;
-		std::vector<std::string>&		getKickedUsers() ;
-		std::vector<std::string>&		getBannedUsers() ;
-		std::vector<std::string>&		getVoicedUsers() ;
+		std::string&					getTopic();
+		std::string&					getMode();
+		std::string&					getChannelPassword();
+		int&							getCapacityLimit();
+		std::vector<std::string>&		getOperators();
+		std::vector<std::string>&		getKickedUsers();
 		std::map <std::string, Client>&	getClientList();
 		void							setTopic(std::string& newTopic);
 		void							setChannelPassword(std::string password);

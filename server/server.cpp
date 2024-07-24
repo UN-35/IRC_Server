@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/24 13:29:02 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/24 23:59:57 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,7 +192,7 @@ void server::ClientRecv( int clientFileD ) {
                 if ( !Clients[clientFileD].getUserName().empty() && !Clients[clientFileD].getNickName().empty() ) {
                     std::string n = Clients[clientFileD].getNickName();
                     std::string u = Clients[clientFileD].getUserName();
-                    std::string welcome = "\033[1;34m :" + hostname + "\033[0m 001 " + "\033[1;33m" + n + "\033[1;32m" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\r\n";
+                    std::string welcome = "\033[1;34m :" + hostname + "\033[0m 001 " + "\033[1;33m" + n + "\033[1;32m" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\033[0m \033[1m \r\n";
                     send( clientFileD, welcome.c_str(), welcome.size(), 0 );
                     std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
                 }
@@ -236,7 +236,7 @@ void server::ClientRecv( int clientFileD ) {
                         }
                     }
                 } // QUIT COMMAND 
-                else if ( cmd == "QUIT" || cmd == "quit" ) {
+                else if ( cmd == "QUIT") {
                     std::string quitMsg = line.substr( sp + 1 );
                     std::string quit = ":" + Clients[clientFileD].getNickName() + " QUIT :" + quitMsg + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
@@ -247,10 +247,13 @@ void server::ClientRecv( int clientFileD ) {
                     close( clientFileD );
                     Clients.erase( clientFileD );
                 } // JOIN COMMMAND
-                else if ( cmd == "JOIN" || cmd == "join"){
-                    std::string channel_name = line.substr( sp + 1 );
+                else if ( cmd == "JOIN"){
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string channel_name = msg[0];
                     if ( channel_name[0] != '#' ) {
                         handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                    } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() == 10 ) {
+                        handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
                     } else {
                         Channel* channel = searchChannel( channel_name );
                         if ( channel == NULL ) {
@@ -258,19 +261,34 @@ void server::ClientRecv( int clientFileD ) {
                             Channels.push_back( newChannel );
                             channel = &Channels.back();
                             Clients[clientFileD].setOperator( true );
+                            channel->addClientToChannel( Clients[clientFileD] );
+                            Clients[clientFileD].addJoindChan();
+                            std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
+                            for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                                if ( it->first != clientFileD )
+                                    send( it->first, join.c_str(), join.size(), 0 );
+                            }
+                            if (Clients[clientFileD].getOperator() == true) {
+                                channel->addFirstOperator( Clients[clientFileD].getNickName() );
+                            }
                         }
-                        channel->addClientToChannel( Clients[clientFileD] );
-                        std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
-                        for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
-                            if ( it->first != clientFileD )
-                                send( it->first, join.c_str(), join.size(), 0 );
+                        else if (channel->getMode().find("l") != std::string::npos && channel->getCapacityLimit() == channel->getClientList().size()) {
+                            handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
                         }
-                        if (Clients[clientFileD].getOperator() == true) {
-                            channel->addFirstOperator( Clients[clientFileD].getNickName() );
+                        else {
+                            channel->addClientToChannel( Clients[clientFileD] );
+                            Clients[clientFileD].addJoindChan();
+                            std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
+                            for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                                if ( it->first != clientFileD )
+                                    send( it->first, join.c_str(), join.size(), 0 );
+                            }
                         }
                     }
+                } else if (cmd == "MODE") {
+                    
                 } // KICK command 
-                else if (cmd == "KICK" || cmd == "kick"){
+                else if (cmd == "KICK"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
                     std::string nick = Clients[clientFileD].getNickName();
                     std::string kick;
@@ -292,12 +310,13 @@ void server::ClientRecv( int clientFileD ) {
                                     handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
                                 } else {
                                     channel->removeClientFromChannel( kicked );
+                                    Clients[clientFileD].delJoindChan();
                                     if ( msg.size() > 2){
                                         std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
+                                        kick = ": \033[1;33m" + nick + "\033[1;32m KICK " + channel_name + " \033[1;31m" + kicked + " : \033[0m" + reason + "\033[1;32m " + "\r\n";
                                         
                                     }else {
-                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + "\r\n";
+                                        kick = ": \033[1;33m" + nick + "\033[1;32m KICK " + channel_name + " \033[1;31m" + kicked + "\033[1;32m " + "\r\n";
                                     }
                                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
                                         if ( it->first != clientFileD )

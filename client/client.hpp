@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:13 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/23 14:17:58 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/24 22:53:29 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Client {
         bool operat;
         bool auth;
         bool regist;
+        int  chan_limit;
         
     public:
         Client();
@@ -50,7 +51,9 @@ class Client {
         bool getAuth();
         bool getRegistration();
         int getFd();
-        
+        int getChanLimit();
+        void addJoindChan();
+        void delJoindChan();
 };
 
 
