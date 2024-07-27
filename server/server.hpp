@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:17:38 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/23 12:39:54 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/27 02:16:09 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,6 +58,8 @@ class server {
         std::vector<std::string> splitVec( std::string str, char c );
         std::string cleanLine( std::string line );
         int searchByNName( std::string NName);
+        bool parseMode(std::string modes);
+        bool isDup(std::string modes);
     // for numeric replies:
         void errMsg_insert();
         void handleNumReps( int cl_fd, int errCode, std::string cmd );

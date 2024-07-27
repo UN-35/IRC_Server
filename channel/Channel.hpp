@@ -13,10 +13,11 @@ class Channel
 		std::map<std::string, Client>	_clientList;
 		std::vector<std::string>		_kicked_users;
 		std::vector<std::string>		_operators;
+        std::vector<std::string>		_invited;
+		std::vector<std::string>		_mode;
 		std::string 					_name;
 		std::string						_operatorPassword;
 		std::string						_topic;
-		std::string						_mode;
 		std::string						_channel_password;
 		int								_limit;
 	public:
@@ -26,12 +27,13 @@ class Channel
         /* Getters and Setters */
 		std::string&					getName();
 		std::string&					getTopic();
-		std::string&					getMode();
+		std::vector<std::string>&		getMode();
 		std::string&					getChannelPassword();
 		int&							getCapacityLimit();
 		std::vector<std::string>&		getOperators();
 		std::vector<std::string>&		getKickedUsers();
 		std::map <std::string, Client>&	getClientList();
+        std::vector<std::string>&		getInvitedUsers();
 		void							setTopic(std::string& newTopic);
 		void							setChannelPassword(std::string password);
 		void							setCapacityLimit(int limit);
@@ -40,6 +42,8 @@ class Channel
 		/* Clients */
 		void							addClientToChannel(Client &client);
 		void							removeClientFromChannel(std::string &clientName);
+        void                            addInvited(std::string &invited_name);
+        bool                            isInvited(std::string &invited_name);
 		/* Client status */
 		void							addToKicked(std::string &banned_name);
 
@@ -49,7 +53,9 @@ class Channel
 		void							addOperator(std::string operatorName);
 		bool							isOperator(std::string &operatorName);
 		/* Modes */
-		void							addMode(std::string const mode);
+		void							addMode(char mode);
 		void							removeMode(std::string const mode);
+        bool                            validMode(char const mode);
+        bool                            isModeSet(std::string const mode);
 		void							removeChannelPassword();
 };

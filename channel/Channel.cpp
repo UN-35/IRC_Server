@@ -3,18 +3,22 @@
 Channel::Channel(std::string const &name) : _name(name), _limit(-1) {
     _clientList.clear();
     _kicked_users.clear();
+    _invited.clear();
+    _operators.clear();
+    _mode.clear();
 }
 
 Channel::~Channel() {}
 /* Getters and Setters */
 std::string& Channel::getName() {return _name;}
 std::string& Channel::getTopic() {return _topic;}
-std::string& Channel::getMode() {return _mode;}
 std::string& Channel::getChannelPassword() {return _channel_password;}
 int& Channel::getCapacityLimit() {return _limit;}
+std::vector<std::string>& Channel::getMode() {return _mode;}
 std::vector<std::string>& Channel::getOperators() {return _operators;}
 std::map <std::string, Client>& Channel::getClientList() {return _clientList;}
 std::vector<std::string>& Channel::getKickedUsers() {return _kicked_users;}
+std::vector<std::string>& Channel::getInvitedUsers() {return _invited;}
 
 void Channel::setTopic(std::string& newTopic) {_topic = newTopic;}
 void Channel::setChannelPassword(std::string password) {_channel_password = password;}
@@ -63,6 +67,36 @@ void	Channel::addToKicked(std::string &kicked_name)
 	}
 	_kicked_users.push_back(kicked_name);
 	std::cout << RED << kicked_name << " is now kicked from the channel " << getName() << RESET << std::endl;
+}
+
+void    Channel::addInvited(std::string &invited_name)
+{
+    std::vector<std::string>::iterator it;
+    for (it = _invited.begin(); it != _invited.end(); it++)
+    {
+        if (*it == invited_name)
+        {
+            std::cout << invited_name << " is already invited to the channel " << getName() << std::endl;
+            return ;
+        }
+    }
+    _invited.push_back(invited_name);
+    std::cout << GREEN << invited_name << " is now invited to the channel " << getName() << RESET << std::endl;
+}
+
+bool    Channel::isInvited(std::string &invited_name)
+{
+    std::vector<std::string>::iterator it;
+    for (it = _invited.begin(); it != _invited.end(); it++)
+    {
+        if (*it == invited_name)
+        {
+            // std::cout << invited_name << " is invited to the channel " << getName() << std::endl;
+            return (true);
+        }
+    }
+    // std::cout << invited_name << " is not invited to the channel " << getName() << std::endl;
+    return (false);
 }
 
 /* Operators */
@@ -118,18 +152,54 @@ void Channel::addOperator(std::string operatorName)
 
 /* Modes */
 
-void Channel::addMode( std::string const mode)
+void Channel::addMode( char mode)
 {
-    if (mode == "o")
-        _mode += "o";
-    else if (mode == "t")
-        _mode += "t";
-    else if (mode == "k")
-        _mode += "k";
-    else if (mode == "l")
-        _mode += "l";
-    else if (mode == "i")
-        _mode += "i";
-    else
-        std::cout << "Unknown mode" << std::endl;
+    std::string app;
+    if (mode == 'i')
+        app = "i";
+    else if (mode == 'o')
+        app = "o";
+    else if (mode == 'l')
+        app = "l";
+    else if (mode == 'k')
+        app = "k";
+    else if (mode == 't')
+        app = "t";
+    std::string tmp = "" + app;
+    _mode.push_back(tmp);
+}
+
+bool Channel::validMode( char const mode )
+{
+    std::string allmodes = "itkol";
+    if (allmodes.find(mode) != std::string::npos)
+        return true;
+    return false;
+}
+
+void Channel::removeMode( std::string const mode )
+{
+    std::vector<std::string>::iterator it;
+    for (it = _mode.begin(); it != _mode.end(); it++)
+    {
+        if (*it == mode)
+        {
+            _mode.erase(it);
+            return ;
+        }
+    }
+}
+
+bool Channel::isModeSet( std::string const mode )
+{
+    std::vector<std::string>::iterator it;
+    for (it = _mode.begin(); it != _mode.end(); it++)
+    {
+        if (*it == mode){
+            std::cout << "check mode yes" << std::endl;
+            return true;
+        }
+    }
+    std::cout << "check mode false" << std::endl;
+    return false;
 }

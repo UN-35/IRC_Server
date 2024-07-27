@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/24 23:59:57 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/27 21:08:56 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,6 +120,11 @@ void server::ClientRecv( int clientFileD ) {
         // replaced exit with quit command
 
         // still fixing this part
+        std::string quit = ": \033[1;33m" + Clients[clientFileD].getNickName() + "\033[1;31m QUIT \033[0m \033[1m" + "\r\n";
+                    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                        if ( it->first != clientFileD )
+                            send( it->first, quit.c_str(), quit.size(), 0 );
+                    }
         std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
         close( clientFileD );
         Clients.erase( clientFileD );
@@ -219,7 +224,7 @@ void server::ClientRecv( int clientFileD ) {
                                 std::map <std::string, Client> clients = channel->getClientList();
                                 for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
                                     if ( it->first != nick ) {
-                                        std::string msgToSend = ": \033[0m" + nick + "\033[1:32m PRIVMSG \033[0m" + channel_name + " :" + message + "\033[1:32m" + "\r\n";
+                                        std::string msgToSend = ": \033[1;33m" + nick + "\033[0m\033[1;32m PRIVMSG \033[1;33m" + channel_name + "\033[0m \033[1m :" + message + "\r\n";
                                         send( it->second.getFd(), msgToSend.c_str(), msgToSend.size(), 0 );
                                     }
                                 }
@@ -230,7 +235,7 @@ void server::ClientRecv( int clientFileD ) {
                             if ( fd == -1 ) {
                                 handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                             } else {
-                                std::string msgToSend = ": \033[0m" + nick + "\033[1:32m PRIVMSG \033[0m" + msg[0] + " :" + message + "\r\n";
+                                std::string msgToSend = ": \033[1;33m" + nick + "\033[0m \033[1;32m PRIVMSG \033[1;33m" + channel_name + "\033[0m \033[1m :" + message + "\r\n";
                                 send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                             }
                         }
@@ -238,7 +243,7 @@ void server::ClientRecv( int clientFileD ) {
                 } // QUIT COMMAND 
                 else if ( cmd == "QUIT") {
                     std::string quitMsg = line.substr( sp + 1 );
-                    std::string quit = ":" + Clients[clientFileD].getNickName() + " QUIT :" + quitMsg + "\r\n";
+                    std::string quit = ": \033[1;33m" + nick + "\033[1;31m QUIT :\033[0m \033[1m" + quitMsg + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
                         if ( it->first != clientFileD )
                             send( it->first, quit.c_str(), quit.size(), 0 );
@@ -250,44 +255,52 @@ void server::ClientRecv( int clientFileD ) {
                 else if ( cmd == "JOIN"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
                     std::string channel_name = msg[0];
+                    std::cout << msg.size() << std::endl;
                     if ( channel_name[0] != '#' ) {
                         handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                     } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() == 10 ) {
                         handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
                     } else {
                         Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL ) {
-                            Channel newChannel( channel_name );
-                            Channels.push_back( newChannel );
-                            channel = &Channels.back();
-                            Clients[clientFileD].setOperator( true );
-                            channel->addClientToChannel( Clients[clientFileD] );
-                            Clients[clientFileD].addJoindChan();
-                            std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
-                            for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
-                                if ( it->first != clientFileD )
-                                    send( it->first, join.c_str(), join.size(), 0 );
+                        if ( channel == NULL) {
+                            if (msg.size() != 1)
+                                handleNumReps(clientFileD, 475, channel_name );
+                            else {
+                                Channel newChannel( channel_name );
+                                Channels.push_back( newChannel );
+                                channel = &Channels.back();
+                                Clients[clientFileD].setOperator( true );
+                                channel->addClientToChannel( Clients[clientFileD] );
+                                Clients[clientFileD].addJoindChan();
+                                // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                if (Clients[clientFileD].getOperator() == true) {
+                                    channel->addFirstOperator( nick );
+                                }
                             }
-                            if (Clients[clientFileD].getOperator() == true) {
-                                channel->addFirstOperator( Clients[clientFileD].getNickName() );
-                            }
-                        }
-                        else if (channel->getMode().find("l") != std::string::npos && channel->getCapacityLimit() == channel->getClientList().size()) {
+                        } else if (channel->isModeSet("k") && msg.size() < 2)
+                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                        else if (channel->isModeSet("k") == false && msg.size() != 1)
+                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                        else if (channel->isModeSet("l") && channel->getCapacityLimit() == (int)channel->getClientList().size()) {
                             handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
+                        } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
+                            handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
+                        } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) {
+                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                         }
                         else {
                             channel->addClientToChannel( Clients[clientFileD] );
                             Clients[clientFileD].addJoindChan();
-                            std::string join = ":" + Clients[clientFileD].getNickName() + " JOIN " + channel_name + "\r\n";
-                            for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
-                                if ( it->first != clientFileD )
-                                    send( it->first, join.c_str(), join.size(), 0 );
+                            std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                            std::map <std::string, Client> clients_list = channel->getClientList();
+                            for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                if ( it->first != nick ) {
+                                    send( it->second.getFd(), join.c_str(), join.size(), 0 );
+                                }
                             }
-                        }
                     }
-                } else if (cmd == "MODE") {
-                    
-                } // KICK command 
+                } 
+                }// KICK command 
                 else if (cmd == "KICK"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
                     std::string nick = Clients[clientFileD].getNickName();
@@ -311,22 +324,72 @@ void server::ClientRecv( int clientFileD ) {
                                 } else {
                                     channel->removeClientFromChannel( kicked );
                                     Clients[clientFileD].delJoindChan();
+                                    std::map <std::string, Client> clients_list = channel->getClientList();
                                     if ( msg.size() > 2){
                                         std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                        kick = ": \033[1;33m" + nick + "\033[1;32m KICK " + channel_name + " \033[1;31m" + kicked + " : \033[0m" + reason + "\033[1;32m " + "\r\n";
+                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;33m" + kicked + " : \033[0m \033[1m" + reason + "\r\n";
                                         
                                     }else {
-                                        kick = ": \033[1;33m" + nick + "\033[1;32m KICK " + channel_name + " \033[1;31m" + kicked + "\033[1;32m " + "\r\n";
+                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;31m" + kicked + "\033[0m\033[1m \r\n";
                                     }
-                                    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
-                                        if ( it->first != clientFileD )
-                                            send( it->first, kick.c_str(), kick.size(), 0 );
+                                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                        if ( it->first != Clients[clientFileD].getNickName() ) {
+                                            send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                } // INVITE command
+                else if (cmd == "INVITE")
+                {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::string invite;
+                    std::string invited;
+                    if ( msg.size() < 2)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else {
+                        std::string channel_name = msg[1];
+                        Channel* channel = searchChannel( channel_name );
+                        invited = msg[0];
+                        if ( channel == NULL ){
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel->clientExist( nick ) == false )
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        else if ( server::searchByNName( invited ) == -1 )
+                            handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
+                        else {
+                            channel->addInvited( invited );
+                            invite = ": \033[1;33m" + nick + "\033[1;32m INVITE \033[1;33m" + invited + " " + channel_name + "\033[0m \033[1m \r\n";
+                            send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        }
+                    }
+                } // MODE command
+                // else if (cmd == "MODE") {
+                //     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
+                //     std::string modes;
+                //     std::string channel_name;
+                //     if (msg.size() < 2)
+                //         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                //     else if (msg.size() > 2){
+                //         handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                //     }
+                //     else {
+                //         channel_name = msg[0];
+                //         Channel* channel = searchChannel( channel_name );
+                //         modes = msg[1];
+                //         if ( channel == NULL )
+                //             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                //         else {
+                //             if (parseMode(modes))
+                //                 std::cout << "valid modes\n";
+                //             else 
+                //                 std::cout << "unvalid modes\n";
+                //         }
+                //     }
+                // }
             }
         }
     }
@@ -374,4 +437,67 @@ Channel* server::searchChannel( std::string channelName ) {
             return &(*it);
     }
     return NULL;
+}
+
+bool server::isDup(std::string modes)
+{
+    int i = 0;
+    int t = 0;
+    int o = 0;
+    int k = 0;
+    int l = 0;
+    for (size_t j = 0; j < modes.size(); j++){
+        if (modes[j] == 'i')
+            i++;
+        if (modes[j] == 't')
+            t++;
+        if (modes[j] == 'o')
+            o++;
+        if (modes[j] == 'k')
+            k++;
+        if (modes[j] == 'l')
+            l++;
+    }
+    std::cout << i << " " << t << " "<< o<< " " << l << " "<< k << std::endl;
+    if (i > 1 || t > 1 || o > 1 || k > 1 || l > 1)
+        return true;
+    return false;
+}
+
+bool server::parseMode(std::string modes)
+{
+    std::string valid = "ioklt";
+    
+    if (isDup(modes))
+        return false;
+    for (size_t i = 0; i < modes.size(); i++){
+        if (modes[i] == '+'){
+            for (size_t j = i + 1; j < modes.size(); j++){
+                if (valid.find(modes[j]) != std::string::npos)
+                    continue ;
+                else if ((modes[j] == '-' || modes[j] == '+') && j == (i + 1) )
+                    return false;
+                else if (modes[j] == '-' || modes[j] == '+')
+                    break ;
+                else if (modes[j + 1] == '\0')
+                    return false;
+                else 
+                    return false;
+            }
+        } else if (modes[i] == '-') {
+            for (size_t j = i + 1; j < modes.size(); j++){
+                if (valid.find(modes[j]) != std::string::npos)
+                    continue ;
+                else if ((modes[j] == '-' || modes[j] == '+') && j == (i + 1) )
+                    return false;
+                else if (modes[j] == '-' || modes[j] == '+')
+                    break ;
+                else if (modes[j + 1] == '\0')
+                    return false;
+                else 
+                    return false;
+            }
+        }
+    }
+    return true;
 }
