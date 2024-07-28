@@ -166,12 +166,14 @@ void Channel::addMode( char mode)
     else if (mode == 't')
         app = "t";
     std::string tmp = "" + app;
+    std::cout << "mode added: " << tmp << std::endl;
     _mode.push_back(tmp);
 }
 
 bool Channel::validMode( char const mode )
 {
     std::string allmodes = "itkol";
+    std::cout << "heelo" << std::endl;
     if (allmodes.find(mode) != std::string::npos)
         return true;
     return false;

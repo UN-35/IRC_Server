@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/27 21:08:56 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/28 05:33:27 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -367,29 +367,54 @@ void server::ClientRecv( int clientFileD ) {
                         }
                     }
                 } // MODE command
-                // else if (cmd == "MODE") {
-                //     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
-                //     std::string modes;
-                //     std::string channel_name;
-                //     if (msg.size() < 2)
-                //         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                //     else if (msg.size() > 2){
-                //         handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                //     }
-                //     else {
-                //         channel_name = msg[0];
-                //         Channel* channel = searchChannel( channel_name );
-                //         modes = msg[1];
-                //         if ( channel == NULL )
-                //             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                //         else {
-                //             if (parseMode(modes))
-                //                 std::cout << "valid modes\n";
-                //             else 
-                //                 std::cout << "unvalid modes\n";
-                //         }
-                //     }
-                // }
+                else if (cmd == "MODE") {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
+                    std::string modes;
+                    std::string channel_name;
+                    if (msg.size() < 2)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else {
+                        channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        modes = msg[1];
+                        if ( channel == NULL )
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        else {
+                            if (modes.length() != 2)
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (modes[1] != 'i' && modes[1] != 't' && msg.size() == 2)
+                                handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                            else if (modes[0] != '+' && modes[0] != '-')
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (channel->validMode(modes[1]) == false)
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (channel->isOperator(nick) == false)
+                                handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
+                            else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
+                                channel->addMode('i');
+                            else if (modes[0] == '-' && modes[1] == 'i' && channel->isModeSet("i") == true)
+                                channel->removeMode("i");
+                            else if (modes[0] == '+' && modes[1] == 'o')
+                            {
+                                if (channel->clientExist(msg[2]) == false)
+                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                                else if (channel->isOperator(msg[2]) == true)
+                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                                else
+                                    channel->addOperator(msg[2]);
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'o')
+                            {
+                                if (channel->clientExist(msg[2]) == false)
+                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                                else if (channel->isOperator(msg[2]) == false)
+                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                                else
+                                    channel->removeOperator(msg[2]);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -467,33 +492,34 @@ bool server::isDup(std::string modes)
 bool server::parseMode(std::string modes)
 {
     std::string valid = "ioklt";
+    std::cout << "modes: " << modes << std::endl;
     
     if (isDup(modes))
         return false;
     for (size_t i = 0; i < modes.size(); i++){
         if (modes[i] == '+'){
             for (size_t j = i + 1; j < modes.size(); j++){
-                if (valid.find(modes[j]) != std::string::npos)
-                    continue ;
+                if (modes[modes.size() - 1] == '+' || modes[modes.size() - 1] == '-')
+                    return false;
                 else if ((modes[j] == '-' || modes[j] == '+') && j == (i + 1) )
                     return false;
+                else if (valid.find(modes[j]) != std::string::npos)
+                    continue ;
                 else if (modes[j] == '-' || modes[j] == '+')
                     break ;
-                else if (modes[j + 1] == '\0')
-                    return false;
                 else 
                     return false;
             }
         } else if (modes[i] == '-') {
             for (size_t j = i + 1; j < modes.size(); j++){
-                if (valid.find(modes[j]) != std::string::npos)
-                    continue ;
+                if (modes[modes.size() - 1] == '+' || modes[modes.size() - 1] == '-')
+                    return false;
                 else if ((modes[j] == '-' || modes[j] == '+') && j == (i + 1) )
                     return false;
+                else if (valid.find(modes[j]) != std::string::npos)
+                    continue ;
                 else if (modes[j] == '-' || modes[j] == '+')
                     break ;
-                else if (modes[j + 1] == '\0')
-                    return false;
                 else 
                     return false;
             }

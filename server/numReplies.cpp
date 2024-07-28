@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/26 13:14:33 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/28 05:24:30 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,8 +89,8 @@ void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
         err = ":" + hostname + " 482 " + nickname + errMsg[errCode];
     else if ( errCode == 441 )
         err = ":" + hostname + " 441 " + nickname + errMsg[errCode];
-    // else if ( errCode == 501 ) // ERR_UMODEUNKNOWNFLAG
-    //     err = client + errMsg[errCode];
+    else if ( errCode == 501 ) // ERR_UMODEUNKNOWNFLAG
+        err = client + errMsg[errCode];
 
     send( cl_fd, err.c_str(), err.size(), 0 );
 }
