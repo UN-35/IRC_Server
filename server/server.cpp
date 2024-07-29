@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/28 05:33:27 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/28 19:54:15 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -254,52 +254,58 @@ void server::ClientRecv( int clientFileD ) {
                 } // JOIN COMMMAND
                 else if ( cmd == "JOIN"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string channel_name = msg[0];
-                    std::cout << msg.size() << std::endl;
-                    if ( channel_name[0] != '#' ) {
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                    } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() == 10 ) {
-                        handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
-                    } else {
-                        Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL) {
-                            if (msg.size() != 1)
-                                handleNumReps(clientFileD, 475, channel_name );
+                    std::string channel_name;// = msg[0];
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::vector<std::string> channels_name = splitVec( msg[0], ',');
+                    for (size_t i = 0; i < channels_name.size(); i++){
+                        channel_name = channels_name[i];
+                        if ( channel_name[0] != '#' ) {
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() == 10 ) {
+                            handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
+                        } else {
+                            Channel* channel = searchChannel( channel_name );
+                            if ( channel == NULL) {
+                                if (msg.size() != 1)
+                                    handleNumReps(clientFileD, 475, channel_name );
+                                else {
+                                    Channel newChannel( channel_name );
+                                    Channels.push_back( newChannel );
+                                    channel = &Channels.back();
+                                    Clients[clientFileD].setOperator( true );
+                                    channel->addClientToChannel( Clients[clientFileD] );
+                                    Clients[clientFileD].addJoindChan();
+                                    // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                    if (Clients[clientFileD].getOperator() == true) {
+                                        channel->addFirstOperator( nick );
+                                    }
+                                }
+                            } else if (channel->isModeSet("k") && msg.size() < 2)
+                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            else if (channel->isModeSet("k") == false && msg.size() != 1)
+                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            else if (channel->isModeSet("l") && channel->getCapacityLimit() == (int)channel->getClientList().size()) {
+                                handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
+                            } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
+                                handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
+                            } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) {
+                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            } else if ( channel->clientExist(nick) ){
+                                handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
+                            }
                             else {
-                                Channel newChannel( channel_name );
-                                Channels.push_back( newChannel );
-                                channel = &Channels.back();
-                                Clients[clientFileD].setOperator( true );
                                 channel->addClientToChannel( Clients[clientFileD] );
                                 Clients[clientFileD].addJoindChan();
-                                // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
-                                if (Clients[clientFileD].getOperator() == true) {
-                                    channel->addFirstOperator( nick );
+                                std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                std::map <std::string, Client> clients_list = channel->getClientList();
+                                for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                    if ( it->first != nick ) {
+                                        send( it->second.getFd(), join.c_str(), join.size(), 0 );
+                                    }
                                 }
                             }
-                        } else if (channel->isModeSet("k") && msg.size() < 2)
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                        else if (channel->isModeSet("k") == false && msg.size() != 1)
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                        else if (channel->isModeSet("l") && channel->getCapacityLimit() == (int)channel->getClientList().size()) {
-                            handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
-                        } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
-                            handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
-                        } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) {
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                         }
-                        else {
-                            channel->addClientToChannel( Clients[clientFileD] );
-                            Clients[clientFileD].addJoindChan();
-                            std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
-                            std::map <std::string, Client> clients_list = channel->getClientList();
-                            for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                if ( it->first != nick ) {
-                                    send( it->second.getFd(), join.c_str(), join.size(), 0 );
-                                }
-                            }
-                    }
-                } 
+                    } 
                 }// KICK command 
                 else if (cmd == "KICK"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
