@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/28 19:54:15 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/07/29 22:46:33 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -288,7 +288,7 @@ void server::ClientRecv( int clientFileD ) {
                                 handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
                             } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
                                 handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
-                            } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) {
+                            } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) { // #TODO: check if the args are more than 4
                                 handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                             } else if ( channel->clientExist(nick) ){
                                 handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
@@ -417,6 +417,48 @@ void server::ClientRecv( int clientFileD ) {
                                     handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
                                 else
                                     channel->removeOperator(msg[2]);
+                            }
+                            else if (modes[0] == '+' && modes[1] == 'k')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else{
+                                    channel->addMode('k');
+                                    channel->setChannelPassword(msg[2]);
+                                }
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'k')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->getChannelPassword() != msg[2])
+                                    handleNumReps(clientFileD, 475, channel_name); //ERR_BADCHANNELKEY
+                                else{
+                                    channel->removeMode("k");
+                                    channel->setChannelPassword("");
+                                }
+                            }
+                            else if (modes[0] == '+' && modes[1] == 'l')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->isModeSet("l") == true)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else{
+                                    channel->addMode('l');
+                                    channel->setCapacityLimit(atoi(msg[2].c_str()));
+                                }
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'l')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->isModeSet("l") == false)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else{
+                                    channel->removeMode("l");
+                                    channel->setCapacityLimit(0);
+                                }
                             }
                         }
                     }
