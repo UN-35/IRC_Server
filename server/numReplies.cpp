@@ -6,13 +6,14 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/28 05:24:30 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/08/04 00:41:49 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
 
 void server::errMsg_insert() {
+    errMsg.insert( std::make_pair( 331, "\033[1;31m :No topic is set\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 401, "\033[1;31m :No such nick/channel\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 403, "\033[1;31m :No such channel\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 404, "\033[1;31m :Cannot send to channel\033[0m\033[1m\r\n" ) );
@@ -35,6 +36,7 @@ void server::errMsg_insert() {
     errMsg.insert( std::make_pair( 482, "\033[1;31m :You're not channel operator\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 441, "\033[1;31m :They aren't on that channel\033[0m\033[1m\r\n") );
     errMsg.insert( std::make_pair( 501, "\033[1;31m :Unknown MODE flag\033[0m\033[1m\r\n" ) );
+    errMsg.insert( std::make_pair( 502, "\033[1;31m :MODE is already set\033[0m\033[1m\r\n"));
 }
 
 void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
@@ -91,6 +93,8 @@ void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
         err = ":" + hostname + " 441 " + nickname + errMsg[errCode];
     else if ( errCode == 501 ) // ERR_UMODEUNKNOWNFLAG
         err = client + errMsg[errCode];
+    else if ( errCode == 331 )
+        err = ":" + hostname + " 331 " + nickname + " " + cmd + errMsg[errCode];
 
     send( cl_fd, err.c_str(), err.size(), 0 );
 }

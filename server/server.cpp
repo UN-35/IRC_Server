@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/29 22:46:33 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/08/04 00:37:00 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -288,7 +288,7 @@ void server::ClientRecv( int clientFileD ) {
                                 handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
                             } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
                                 handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
-                            } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] ) { // #TODO: check if the args are more than 4
+                            } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] && msg.size() != 2) { // #TODO: check if the args are more than 4
                                 handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                             } else if ( channel->clientExist(nick) ){
                                 handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
@@ -297,6 +297,8 @@ void server::ClientRecv( int clientFileD ) {
                                 channel->addClientToChannel( Clients[clientFileD] );
                                 Clients[clientFileD].addJoindChan();
                                 std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                if (!channel->getTopic().empty())
+                                    send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
                                 std::map <std::string, Client> clients_list = channel->getClientList();
                                 for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                     if ( it->first != nick ) {
@@ -370,6 +372,30 @@ void server::ClientRecv( int clientFileD ) {
                             channel->addInvited( invited );
                             invite = ": \033[1;33m" + nick + "\033[1;32m INVITE \033[1;33m" + invited + " " + channel_name + "\033[0m \033[1m \r\n";
                             send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        }
+                    }
+                } // TOPIC command
+                else if (cmd == "TOPIC") {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string topic;
+                    std::string channel_name;
+                    if (msg.size() < 1)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else {
+                        channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        if ( channel == NULL )
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        else if (channel->clientExist(nick) == false)
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        else if (channel->isModeSet("t") && Clients[clientFileD].getOperator() == false && msg.size() > 1)
+                            handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                        else if (msg.size() > 1){   
+                            topic = line.substr( sp + 1 + msg[0].length() + 1 ) + "\r\n";
+                            channel->setTopic(topic);
+                        }
+                        else if (msg.size() == 1){
+                            send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
                         }
                     }
                 } // MODE command
@@ -460,6 +486,22 @@ void server::ClientRecv( int clientFileD ) {
                                     channel->setCapacityLimit(0);
                                 }
                             }
+                            else if (modes[0] == '+' && modes [1] == 't')
+                            {
+                                if (channel->isModeSet("t") == true)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else
+                                    channel->addMode('t');
+                            }
+                            else if (modes[0] == '-' && modes [1] == 't')
+                            {
+                                if (channel->isModeSet("t") == false)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else
+                                    channel->removeMode("t");
+                            }
+                            else
+                                handleNumReps(clientFileD, 501, line); //ERR_UMODEUNKNOWNFLAG
                         }
                     }
                 }

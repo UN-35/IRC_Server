@@ -57,5 +57,5 @@ class Channel
 		void							removeMode(std::string const mode);
         bool                            validMode(char const mode);
         bool                            isModeSet(std::string const mode);
-		void							removeChannelPassword();
+		// void							removeChannelPassword();
 };

@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-Channel::Channel(std::string const &name) : _name(name), _limit(-1) {
+Channel::Channel(std::string const &name) : _name(name), _limit(-1){
     _clientList.clear();
     _kicked_users.clear();
     _invited.clear();
