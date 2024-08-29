@@ -26,7 +26,6 @@ class Client {
         std::string clPasswd;
 
         bool operat;
-        bool auth;
         bool regist;
         int  chan_limit;
         
@@ -34,12 +33,12 @@ class Client {
         Client();
         Client( int _fd, std::string _passwd );
         ~Client();
+        bool auth[3];
 // set
         void setNickName( std::string nick );
         void setUserName( std::string uName );
         void setBuffer( std::string buff );
         void setOperator( bool is_operator );
-        void setAuth( bool Authentic );
         void setRegistration( bool is_regist );
 // reset/erase buffer
         void erase_buff();
@@ -48,7 +47,6 @@ class Client {
         std::string getUserName();
         std::string getBuffer();
         bool getOperator();
-        bool getAuth();
         bool getRegistration();
         int getFd();
         int getChanLimit();

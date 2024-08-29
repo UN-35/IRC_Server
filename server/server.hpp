@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:17:38 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/27 02:16:09 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/08/28 22:59:58 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <string>
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
@@ -24,6 +25,7 @@
 #include <poll.h>
 #include <fcntl.h>
 #include <sstream>
+#include <ctime>
 
 #include "../client/client.hpp"
 #include "../channel/Channel.hpp"

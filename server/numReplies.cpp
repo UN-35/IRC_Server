@@ -37,9 +37,10 @@ void server::errMsg_insert() {
     errMsg.insert( std::make_pair( 441, "\033[1;31m :They aren't on that channel\033[0m\033[1m\r\n") );
     errMsg.insert( std::make_pair( 501, "\033[1;31m :Unknown MODE flag\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 502, "\033[1;31m :MODE is already set\033[0m\033[1m\r\n"));
+    errMsg.insert( std::make_pair( 432, " :Erroneus nickname\r\n"));
 }
 
-void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
+void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
     std::string err;
     std::string client;
     std::stringstream ss;
@@ -48,53 +49,56 @@ void server::handleNumReps( int cl_fd, int errCode, std::string cmd ) {
     ss >> client;
 
     std::string nickname = Clients[cl_fd].getNickName();
-    
-    if ( errCode == 401 ) // ERR_NOSUCHNICK
-        err = ":" + hostname + " 401 " + nickname + errMsg[errCode];
-    else if ( errCode == 403 ) // ERR_NOSUCHCHANNEL
-        err = ":" + hostname + " 403 " + nickname + errMsg[errCode];
-    else if ( errCode == 404 ) // ERR_CANNOTSENDTOCHAN
-        err = ":" + hostname + " 404 " + nickname + " " + cmd + errMsg[errCode];
-    else if ( errCode == 405 ) // ERR_TOOMANYCHANNELS
-        err = client + " " + cmd + errMsg[errCode];
-    else if ( errCode == 407 ) // ERR_TOOMANYTARGETS
-        err = client + errMsg[errCode];
-    else if ( errCode == 411 ) // ERR_NORECIPIENT
-        err = ":" + hostname + " 411 " + nickname + errMsg[errCode] + cmd;
-    else if ( errCode == 421 ) // ERR_UNKNOWNCOMMAND
-        err = ":" + hostname + " 421 " + nickname + " " + cmd + errMsg[errCode];
-    else if ( errCode == 433 ) // ERR_NICKNAMEINUSE
-        err = ": " + hostname + " 433 * " + cmd + errMsg[errCode];
-    else if ( errCode == 442 ) // ERR_NOTONCHANNEL
-        err = ":" + hostname + " 442 " + nickname + errMsg[errCode];
-    else if ( errCode == 443 ) // ERR_USERONCHANNEL
-        err = nickname + errMsg[errCode];
-    else if ( errCode == 451 ) // ERR_NOTREGISTERED
-        err =  ":" + hostname + " 451 " + cmd + errMsg[errCode];
-    else if ( errCode == 461 ) // ERR_NEEDMOREPARAMS
-        err = ":" + hostname + " 461 " + nickname + errMsg[errCode];
-    else if ( errCode == 462 ) // ERR_ALREADYREGISTERED
-        err = client + errMsg[errCode];
-    else if ( errCode == 464 ) // ERR_PASSWDMISMATCH
-        err = ":" + hostname + " 464 " + nickname + errMsg[errCode];
-    else if ( errCode == 471 ) // ERR_CHANNELISFULL
-        err = ":" + hostname + " 471 " + nickname + " " + cmd + errMsg[errCode];
-    else if ( errCode == 472 ) // ERR_UNKNOWNMODE
-        err = ":" + hostname + " 472 " + nickname + errMsg[errCode];
-    else if ( errCode == 473 ) // ERR_INVITEONLYCHAN
-        err = ":" + hostname + " 473 " + nickname + " " + cmd + errMsg[errCode];
-    else if ( errCode == 475 ) // ERR_BADCHANNELKEY
-        err = ":" + hostname + " 475 " + nickname + " " + cmd + errMsg[errCode];
-    else if ( errCode == 481 ) // ERR_NOPRIVILEGES
-        err = ":" + hostname + " 481 " + nickname + errMsg[errCode];
-    else if ( errCode == 482 ) // ERR_CHANOPRIVSNEEDED
-        err = ":" + hostname + " 482 " + nickname + errMsg[errCode];
-    else if ( errCode == 441 )
-        err = ":" + hostname + " 441 " + nickname + errMsg[errCode];
-    else if ( errCode == 501 ) // ERR_UMODEUNKNOWNFLAG
-        err = client + errMsg[errCode];
-    else if ( errCode == 331 )
-        err = ":" + hostname + " 331 " + nickname + " " + cmd + errMsg[errCode];
+
+
+    if ( replyCode == 432 ) // ERR_ERRONEUSNICKNAME
+        err = ":" + hostname + " 432 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 401 ) // ERR_NOSUCHNICK
+        err = ":" + hostname + " 401 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 403 ) // ERR_NOSUCHCHANNEL
+        err = ":" + hostname + " 403 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 404 ) // ERR_CANNOTSENDTOCHAN
+        err = ":" + hostname + " 404 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 405 ) // ERR_TOOMANYCHANNELS
+        err = client + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 407 ) // ERR_TOOMANYTARGETS
+        err = client + errMsg[replyCode];
+    else if ( replyCode == 411 ) // ERR_NORECIPIENT
+        err = ":" + hostname + " 411 " + nickname + errMsg[replyCode] + cmd;
+    else if ( replyCode == 421 ) // ERR_UNKNOWNCOMMAND
+        err = ":" + hostname + " 421 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 433 ) // ERR_NICKNAMEINUSE
+        err = ": " + hostname + " 433 * " + cmd + errMsg[replyCode];
+    else if ( replyCode == 442 ) // ERR_NOTONCHANNEL
+        err = ":" + hostname + " 442 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 443 ) // ERR_USERONCHANNEL
+        err = nickname + errMsg[replyCode];
+    else if ( replyCode == 451 ) // ERR_NOTREGISTERED
+        err =  ":" + hostname + " 451 " + cmd + errMsg[replyCode];
+    else if ( replyCode == 461 ) // ERR_NEEDMOREPARAMS
+        err = ":" + hostname + " 461 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 462 ) // ERR_ALREADYREGISTERED
+        err = client + errMsg[replyCode];
+    else if ( replyCode == 464 ) // ERR_PASSWDMISMATCH
+        err = ":" + hostname + " 464 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 471 ) // ERR_CHANNELISFULL
+        err = ":" + hostname + " 471 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 472 ) // ERR_UNKNOWNMODE
+        err = ":" + hostname + " 472 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 473 ) // ERR_INVITEONLYCHAN
+        err = ":" + hostname + " 473 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 475 ) // ERR_BADCHANNELKEY
+        err = ":" + hostname + " 475 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 481 ) // ERR_NOPRIVILEGES
+        err = ":" + hostname + " 481 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 482 ) // ERR_CHANOPRIVSNEEDED
+        err = ":" + hostname + " 482 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 441 )
+        err = ":" + hostname + " 441 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 501 ) // ERR_UMODEUNKNOWNFLAG
+        err = client + errMsg[replyCode];
+    else if ( replyCode == 331 )
+        err = ":" + hostname + " 331 " + nickname + " " + cmd + errMsg[replyCode];
 
     send( cl_fd, err.c_str(), err.size(), 0 );
 }

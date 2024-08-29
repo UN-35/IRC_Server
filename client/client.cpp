@@ -18,7 +18,9 @@ Client::Client() {}
 Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _passwd ) {
     nickName = "";
     userName = "";
-    auth = false;
+    auth[0] = false;
+    auth[1] = false;
+    auth[2] = false;
     operat = false;
     regist = false;
     chan_limit = 0;
@@ -30,7 +32,6 @@ void Client::setNickName( std::string nick ) { this->nickName = nick; }
 void Client::setUserName( std::string uName ) { this->userName = uName; }
 void Client::setBuffer( std::string buff ) { this->buffer += buff; }
 void Client::setOperator( bool is_operator ) { this->operat = is_operator; }
-void Client::setAuth( bool Authentic ) { this->auth = Authentic; }
 void Client::setRegistration( bool is_regist ) { this->regist = is_regist; }
 
 void Client::erase_buff() { this->buffer.erase(); }
@@ -40,7 +41,6 @@ std::string Client::getUserName() { return this->userName; }
 std::string Client::getBuffer() { return this->buffer; }
 int Client::getFd() { return this->fd_client; }
 bool Client::getOperator() { return this->operat; }
-bool Client::getAuth() { return this->auth; }
 bool Client::getRegistration() { return this->regist; }
 int Client::getChanLimit() { return this->chan_limit; }
 void Client::addJoindChan() { this->chan_limit++; }
