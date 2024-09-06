@@ -6,7 +6,7 @@
 /*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/08/29 02:45:17 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/09/06 12:44:04 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,7 +157,7 @@ void server::ClientRecv( int clientFileD ) {
         if ( Clients[clientFileD].auth[2] == false ) {
             if ( cmd == "PASS" ) {
                 std::string pass( line.substr( sp + 1 ));
-                if ( pass != passwd ){
+                if ( pass != passwd ) {
                     handleNumReps( clientFileD, 464 , line ); // ERR_PASSWDMISMATCH
                     return ;
                 }
@@ -571,7 +571,7 @@ void server::ClientRecv( int clientFileD ) {
                 std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ');
 
                 if ( option[0] == "--help" || option[0] == "-h" ) {
-                    std::string help = "NAME :\r\n    BOT\r\nSYNOPSIS :\r\n    BOT [Option]\r\nVALID OPTIONS :\r\n   -h, --help : shows informations about the Bot.\r\n    -d : shows the duration you have been online on the our IRCserver\r\n";
+                    std::string help = "NAME :\r\n    BOT\r\nSYNOPSIS :\r\n    BOT [Option]\r\nVALID OPTIONS :\r\n    -h, --help : shows informations about the Bot.\r\n    -d : shows the duration you have been online on the our IRCserver\r\n    -cc : this is the channel counter, it tells you how many channels you are currenly a member of\r\n";
                     send( clientFileD, help.c_str(), help.size(), 0 );
                 } else if ( option[0] == "-d" ) {
                     // Record the end time
@@ -594,8 +594,18 @@ void server::ClientRecv( int clientFileD ) {
                     std::string ConnectionChrono =  "You have been online on the server for : " + oss.str() + " now.\r\n";
                     send( clientFileD, ConnectionChrono.c_str(), ConnectionChrono.size(), 0 );
                 }
-                //else if (){}   think about something else in here;
-                // ideas : how many channels u're currently in,
+                else if ( option[0] == "-cc" ) { //for channel counter
+                    int count = Clients[clientFileD].getChanLimit();
+                    std::ostringstream oss_count;
+                    oss_count << count;
+                    std::string counter;
+                    if ( count <= 1 )
+                        counter = "You are currently a member in " + oss_count.str() + " channel\r\n";
+                    else
+                        counter = "You are currently a member in " + oss_count.str() + " channels\r\n";
+                    send( clientFileD, counter.c_str(), counter.size(), 0 );
+                    
+                }
                 
                 else {
                     std::string noOption = "Try BOT -h/--help to show all the valid options IRCbot can do.\r\n";
