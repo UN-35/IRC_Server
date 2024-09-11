@@ -3,42 +3,42 @@
 /*                                                        :::      ::::::::   */
 /*   numReplies.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/11 15:22:49 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/11 19:14:59 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
 
 void server::errMsg_insert() {
-    errMsg.insert( std::make_pair( 331, "\033[1;31m :No topic is set\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 401, "\033[1;31m :No such nick/channel\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 403, "\033[1;31m :No such channel\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 404, "\033[1;31m :Cannot send to channel\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 405, "\033[1;31m :You have joined too many channels\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 407, "\033[1;31m :Too many targets\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 411, "\033[1;31m :No recipient given\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 421, "\033[1;31m :Unknown command\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 433, "\033[1;31m :Nickname is already in use\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 442, "\033[1;31m :You're not on that channel\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 443, "\033[1;31m :is already on channel\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 451, "\033[1;31m :You have not registered\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 461, "\033[1;31m :Not enough parameters\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 462, "\033[1;31m :You may not reregister\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 464, "\033[1;31m :Password incorrect\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 471, "\033[1;31m :Cannot join channel (+l)\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 472, "\033[1;31m :is unknown mode char to me\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 473, "\033[1;31m :Cannot join channel (+i)\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 475, "\033[1;31m :Cannot join channel (+k)\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 481, "\033[1;31m :Permission Denied- You're not an IRC operator\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 482, "\033[1;31m :You're not channel operator\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 441, "\033[1;31m :They aren't on that channel\033[0m\033[1m\r\n") );
-    errMsg.insert( std::make_pair( 501, "\033[1;31m :Unknown MODE flag\033[0m\033[1m\r\n" ) );
-    errMsg.insert( std::make_pair( 502, "\033[1;31m :MODE is already set\033[0m\033[1m\r\n"));
-    errMsg.insert( std::make_pair( 503, "\033[1;31m :Channel name too long\033[0m\033[1m\r\n"));
-    errMsg.insert( std::make_pair( 504, "\033[1;31m :Too many channels\033[0m\033[1m\r\n"));
+    errMsg.insert( std::make_pair( 331, " :No topic is set\r\n" ) );
+    errMsg.insert( std::make_pair( 401, " :No such nick/channel\r\n" ) );
+    errMsg.insert( std::make_pair( 403, " :No such channel\r\n" ) );
+    errMsg.insert( std::make_pair( 404, " :Cannot send to channel\r\n" ) );
+    errMsg.insert( std::make_pair( 405, " :You have joined too many channels\r\n" ) );
+    errMsg.insert( std::make_pair( 407, " :Too many targets\r\n" ) );
+    errMsg.insert( std::make_pair( 411, " :No recipient given\r\n" ) );
+    errMsg.insert( std::make_pair( 421, " :Unknown command\r\n" ) );
+    errMsg.insert( std::make_pair( 433, " :Nickname is already in use\r\n" ) );
+    errMsg.insert( std::make_pair( 442, " :You're not on that channel\r\n" ) );
+    errMsg.insert( std::make_pair( 443, " :is already on channel\r\n" ) );
+    errMsg.insert( std::make_pair( 451, " :You have not registered\r\n" ) );
+    errMsg.insert( std::make_pair( 461, " :Not enough parameters\r\n" ) );
+    errMsg.insert( std::make_pair( 462, " :You may not reregister\r\n" ) );
+    errMsg.insert( std::make_pair( 464, " :Password incorrect\r\n" ) );
+    errMsg.insert( std::make_pair( 471, " :Cannot join channel (+l)\r\n" ) );
+    errMsg.insert( std::make_pair( 472, " :is unknown mode char to me\r\n" ) );
+    errMsg.insert( std::make_pair( 473, " :Cannot join channel (+i)\r\n" ) );
+    errMsg.insert( std::make_pair( 475, " :Cannot join channel (+k)\r\n" ) );
+    errMsg.insert( std::make_pair( 481, " :Permission Denied- You're not an IRC operator\r\n" ) );
+    errMsg.insert( std::make_pair( 482, " :You're not channel operator\r\n" ) );
+    errMsg.insert( std::make_pair( 441, " :They aren't on that channel\r\n") );
+    errMsg.insert( std::make_pair( 501, " :Unknown MODE flag\r\n" ) );
+    errMsg.insert( std::make_pair( 502, " :MODE is already set\r\n"));
+    errMsg.insert( std::make_pair( 503, " :Channel name too long\r\n"));
+    errMsg.insert( std::make_pair( 504, " :Too many channels\r\n"));
     errMsg.insert( std::make_pair( 432, " :Erroneus nickname\r\n"));
 }
 

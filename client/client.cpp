@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:16 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/24 22:53:13 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/11 18:32:19 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 Client::Client() {}
 
-Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _passwd ) {
+Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _passwd ) , chan_limit(0){
     nickName = "";
     userName = "";
     auth[0] = false;
@@ -23,7 +23,6 @@ Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _pas
     auth[2] = false;
     operat = false;
     regist = false;
-    chan_limit = 0;
 }
 Client::~Client() {}
 

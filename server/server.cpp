@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/11 17:16:16 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/11 19:19:46 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,7 +119,7 @@ void server::ClientRecv( int clientFileD ) {
     
     ssize_t index = read( clientFileD, buffer.data(), buffer.size() );
     if ( !index ) { //means that the client disconnected
-        std::string quit = ": \033[1;33m" + Clients[clientFileD].getNickName() + "\033[1;31m QUIT \033[0m \033[1m" + "\r\n";
+        std::string quit = ": " + Clients[clientFileD].getNickName() + " QUIT  " + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
                         if ( it->first != clientFileD )
                             send( it->first, quit.c_str(), quit.size(), 0 );
@@ -198,10 +198,10 @@ void server::ClientRecv( int clientFileD ) {
                 if ( Clients[clientFileD].getUserName().empty() ) {
                     Clients[clientFileD].setUserName( username[0] );
 
-                    std::string rep1 = "\033[1;32m:" + hostname + " 001 " + Clients[clientFileD].getNickName() + " :Welcome to IRC server\033[1m\r\n";
-                    std::string rep2 = "\033[1;32m:" + hostname + " 002 " + Clients[clientFileD].getNickName() + " :Your host is Running on v1.0\033[1m\r\n";
-                    std::string rep3 = "\033[1;32m:" + hostname + " 003 " + Clients[clientFileD].getNickName() + " :This server was created now\033[1m\r\n";
-                    std::string rep4 = "\033[1;32m:" + hostname + " 004 " + Clients[clientFileD].getNickName() + " :FT_irc v1.0\033[0m\033[1m\r\n";
+                    std::string rep1 = ":" + hostname + " 001 " + Clients[clientFileD].getNickName() + " :Welcome to IRC server\r\n";
+                    std::string rep2 = ":" + hostname + " 002 " + Clients[clientFileD].getNickName() + " :Your host is Running on v1.0\r\n";
+                    std::string rep3 = ":" + hostname + " 003 " + Clients[clientFileD].getNickName() + " :This server was created now\r\n";
+                    std::string rep4 = ":" + hostname + " 004 " + Clients[clientFileD].getNickName() + " :FT_irc v1.0\r\n";
 
                     send( clientFileD, rep1.c_str(), rep1.size(), 0 );
                     send( clientFileD, rep2.c_str(), rep2.size(), 0 );
@@ -215,7 +215,7 @@ void server::ClientRecv( int clientFileD ) {
             if ( !Clients[clientFileD].getUserName().empty() && !Clients[clientFileD].getNickName().empty() ) {
                 std::string n = Clients[clientFileD].getNickName();
                 std::string u = Clients[clientFileD].getUserName();
-                // std::string welcome = "\033[1;34m :" + hostname + "\033[0m 001 " + "\033[1;33m" + n + "\033[1;32m" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "\033[0m \033[1m \r\n";
+                // std::string welcome = "\033[1;34m :" + hostname + " 001 " + "" + n + "" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "  \r\n";
                 // send( clientFileD, welcome.c_str(), welcome.size(), 0 );
                 std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
                 //
@@ -232,6 +232,7 @@ void server::ClientRecv( int clientFileD ) {
             }
             if (cmd == "PRIVMSG") {
                 std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                std::cout << msg[0] << std::endl;
                 if ( msg.size() < 2 ) {
                     handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                 } else {
@@ -251,7 +252,7 @@ void server::ClientRecv( int clientFileD ) {
                             std::map <std::string, Client> clients = channel->getClientList();
                             for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
                                 if ( it->first != nick ) {
-                                    std::string msgToSend = ": \033[1;33m" + nick + "\033[0m\033[1;32m PRIVMSG \033[1;33m" + channel_name + "\033[0m \033[1m :" + message + "\r\n";
+                                    std::string msgToSend = ": " + nick + " PRIVMSG " + channel_name + "  :" + message + "\r\n";
                                     send( it->second.getFd(), msgToSend.c_str(), msgToSend.size(), 0 );
                                 }
                             }
@@ -262,7 +263,7 @@ void server::ClientRecv( int clientFileD ) {
                         if ( fd == -1 ) {
                             handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                         } else {
-                            std::string msgToSend = ": \033[1;33m" + nick + "\033[0m \033[1;32m PRIVMSG \033[1;33m" + channel_name + "\033[0m \033[1m :" + message + "\r\n";
+                            std::string msgToSend = ": " + nick + "  PRIVMSG " + channel_name + "  :" + message + "\r\n";
                             send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                         }
                     }
@@ -301,7 +302,7 @@ void server::ClientRecv( int clientFileD ) {
             }
             else if ( cmd == "QUIT") {
                     std::string quitMsg = line.substr( sp + 1 );
-                    std::string quit = ": \033[1;33m" + nick + "\033[1;31m QUIT :\033[0m \033[1m" + quitMsg + "\r\n";
+                    std::string quit = ": " + nick + " QUIT : " + quitMsg + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
                         if ( it->first != clientFileD )
                             send( it->first, quit.c_str(), quit.size(), 0 );
@@ -347,7 +348,7 @@ void server::ClientRecv( int clientFileD ) {
                                         Clients[clientFileD].setOperator( true );
                                         channel->addClientToChannel( Clients[clientFileD] );
                                         Clients[clientFileD].addJoindChan();
-                                        // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                        // std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
                                         if (Clients[clientFileD].getOperator() == true) {
                                             channel->addFirstOperator( nick );
                                         // }
@@ -369,7 +370,7 @@ void server::ClientRecv( int clientFileD ) {
                                 else {
                                     channel->addClientToChannel( Clients[clientFileD] );
                                     Clients[clientFileD].addJoindChan();
-                                    std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                    std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
                                     if (!channel->getTopic().empty())
                                         send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
                                     std::map <std::string, Client> clients_list = channel->getClientList();
@@ -409,10 +410,10 @@ void server::ClientRecv( int clientFileD ) {
                                     std::map <std::string, Client> clients_list = channel->getClientList();
                                     if ( msg.size() > 2){
                                         std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;33m" + kicked + " : \033[0m \033[1m" + reason + "\r\n";
+                                        kick = ": " + nick + " KICK " + channel_name + " " + kicked + " :  " + reason + "\r\n";
                                         
                                     }else {
-                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;31m" + kicked + "\033[0m\033[1m \r\n";
+                                        kick = ": " + nick + " KICK " + channel_name + " " + kicked + " \r\n";
                                     }
                                     for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                         if ( it->first != Clients[clientFileD].getNickName() ) {
@@ -444,7 +445,7 @@ void server::ClientRecv( int clientFileD ) {
                             handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
                         else {
                             channel->addInvited( invited );
-                            invite = ": \033[1;33m" + nick + "\033[1;32m INVITE \033[1;33m" + invited + " " + channel_name + "\033[0m \033[1m \r\n";
+                            invite = ": " + nick + " INVITE " + invited + " " + channel_name + "  \r\n";
                             send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
                         }
                     }
@@ -581,30 +582,30 @@ void server::ClientRecv( int clientFileD ) {
                         }
                     }
                 } else if (cmd == "/EMET"){
-                    std::string emet_help = "\033[1;33m Usage: /EMET [OPTION] [ARGUMENT]\033[0m\n"
-                        "\033[1;30m Options:\n"
+                    std::string emet_help = " Usage: /EMET [OPTION] [ARGUMENT]\n"
+                        " Options:\n"
                         "   -h, --help\t\tDisplay this help and exit\n"
                         "   -c, --channels list\t\tList all channels available\n"
                         "   -u, --users list\t\tList all users connected\n"
                         "   -cu, --list-users [CHANNEL]\t\tList all users in a specific channel\n"
                         "   -cm, --channel-mode [CHANNEL]\t\tList all modes of a specific channel\n"
-                        "   -i, --invited \t\tAll channels you are invited to\033[0m\033[1m\r\n";
+                        "   -i, --invited \t\tAll channels you are invited to\r\n";
                     std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ' );
                     std::string msg;
                     if (option[0] == "-h" && option.size() < 2){
                         send( clientFileD, emet_help.c_str(), emet_help.size(), 0 );
                     } else if (option[0] == "-c" && option.size() < 2) {
-                        msg = "\033[1;30mChannels Available: \r\n";
+                        msg = "Channels Available: \r\n";
                         send( clientFileD, msg.c_str(), msg.size(), 0 );
                         for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
-                            msg = "\033[1;33m- " + it->getName() + "\033[0m\033[1m\r\n";
+                            msg = "- " + it->getName() + "\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
                     } else if (option[0] == "-u" && option.size() < 2) {
-                        msg = "\033[1;30mUsers Connected: \r\n";
+                        msg = "Users Connected: \r\n";
                         send( clientFileD, msg.c_str(), msg.size(), 0 );
                         for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++){
-                            msg = "\033[1;33m- " + it->second.getNickName() + "\033[0m\033[1m\r\n";
+                            msg = "- " + it->second.getNickName() + "\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
                     } else if (option[0] == "-cu" && option.size() == 2) {
@@ -612,15 +613,15 @@ void server::ClientRecv( int clientFileD ) {
                         if (channel == NULL) {
                             handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
                         } else if (channel->clientExist(nick) == false){
-                            msg = "\033[1;31m(Permession denied!)\033[0m\n"
-                                "\033[1;30mYou are not in the channel\033[1m\r\n";
+                            msg = "(Permession denied!)\n"
+                                "You are not in the channel\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }else {
                             std::map<std::string, Client> clients = channel->getClientList();
-                            msg = "\033[1;30m"+ option[1] + " Users: \r\n";
+                            msg = ""+ option[1] + " Users: \r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                             for (std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++){
-                                msg = "\033[1;33m- " + it->first + "\033[0m\033[1m\r\n";
+                                msg = "- " + it->first + "\r\n";
                                 send( clientFileD, msg.c_str(), msg.size(), 0 );
                             }
                         }
@@ -629,13 +630,13 @@ void server::ClientRecv( int clientFileD ) {
                         if (channel == NULL) {
                             handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
                         } else if (channel->clientExist(nick) == false){
-                            msg = "\033[1;31m(Permession denied!)\033[0m\n"
-                                "\033[1;30mYou are not in the channel\033[1m\r\n";
+                            msg = "(Permession denied!)\n"
+                                "You are not in the channel\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }else {
-                            msg = "\033[1;30m"+ option[1] + " Modes: \r\n";
+                            msg = ""+ option[1] + " Modes: \r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            msg = "\033[1;33m- ";
+                            msg = "- ";
                             if (channel->isModeSet("i")){
                                 msg += "- Mode (i) : Invite Only\r\n";
                             } if (channel->isModeSet("t")){
@@ -652,21 +653,21 @@ void server::ClientRecv( int clientFileD ) {
                             } if (channel->isModeSet("l")) {
                                 msg += "- Mode (l) : Capacity Limit (" + channel->_strLimit + ")\r\n";
                             }
-                            msg += "\033[0m\033[1m\r\n";
+                            msg += "\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
                     } else if (option[0] == "-i" && option.size() < 2) {
-                        msg = "\033[1;30mChannels You are Invited to: \r\n";
+                        msg = "Channels You are Invited to: \r\n";
                         send( clientFileD, msg.c_str(), msg.size(), 0 );
                         bool check = false;
                         for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
                             if (it->isInvited(nick)){
                                 check = true;
-                                msg = "\033[1;33m- " + it->getName() + "\033[0m\033[1m\r\n";
+                                msg = "- " + it->getName() + "\r\n";
                                 send( clientFileD, msg.c_str(), msg.size(), 0 );
                             }
                             if (!check){
-                                msg = "\033[1;33m- No Channels Invited to\r\n";
+                                msg = "- No Channels Invited to\r\n";
                                 send( clientFileD, msg.c_str(), msg.size(), 0 );
                             }
                         }
@@ -724,7 +725,7 @@ void server::ClientRecv( int clientFileD ) {
                     }
                 }
                 else {
-                    std::string msg = "\033[1;31mInvalid Command!\033[0m\033[1m\r\n";
+                    std::string msg = "Invalid Command!\r\n";
                     send( clientFileD, msg.c_str(), msg.size(), 0 );
                 }
         }
