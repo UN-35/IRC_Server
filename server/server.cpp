@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/06 12:44:04 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/09/11 17:16:16 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -198,10 +198,10 @@ void server::ClientRecv( int clientFileD ) {
                 if ( Clients[clientFileD].getUserName().empty() ) {
                     Clients[clientFileD].setUserName( username[0] );
 
-                    std::string rep1 = ":" + hostname + " 001 " + Clients[clientFileD].getNickName() + " :Welcome to IRC server\r\n";
-                    std::string rep2 = ":" + hostname + " 002 " + Clients[clientFileD].getNickName() + " :Your host is Running on v1.0\r\n";
-                    std::string rep3 = ":" + hostname + " 003 " + Clients[clientFileD].getNickName() + " :This server was created now\r\n";
-                    std::string rep4 = ":" + hostname + " 004 " + Clients[clientFileD].getNickName() + " :FT_irc v1.0\r\n";
+                    std::string rep1 = "\033[1;32m:" + hostname + " 001 " + Clients[clientFileD].getNickName() + " :Welcome to IRC server\033[1m\r\n";
+                    std::string rep2 = "\033[1;32m:" + hostname + " 002 " + Clients[clientFileD].getNickName() + " :Your host is Running on v1.0\033[1m\r\n";
+                    std::string rep3 = "\033[1;32m:" + hostname + " 003 " + Clients[clientFileD].getNickName() + " :This server was created now\033[1m\r\n";
+                    std::string rep4 = "\033[1;32m:" + hostname + " 004 " + Clients[clientFileD].getNickName() + " :FT_irc v1.0\033[0m\033[1m\r\n";
 
                     send( clientFileD, rep1.c_str(), rep1.size(), 0 );
                     send( clientFileD, rep2.c_str(), rep2.size(), 0 );
@@ -300,320 +300,433 @@ void server::ClientRecv( int clientFileD ) {
                 send( clientFileD, pong.c_str(), pong.size(), 0 );
             }
             else if ( cmd == "QUIT") {
-                std::string quitMsg = line.substr( sp + 1 );
-                std::string quit = ": \033[1;33m" + nick + "\033[1;31m QUIT :\033[0m \033[1m" + quitMsg + "\r\n";
-                for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
-                    if ( it->first != clientFileD )
-                        send( it->first, quit.c_str(), quit.size(), 0 );
-                }
-                std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
-                close( clientFileD );
-                Clients.erase( clientFileD );
-            } // JOIN COMMMAND
-            else if ( cmd == "JOIN"){
-                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                std::string channel_name;// = msg[0];
-                std::string nick = Clients[clientFileD].getNickName();
-                std::vector<std::string> channels_name = splitVec( msg[0], ',');
-                for (size_t i = 0; i < channels_name.size(); i++){
-                    channel_name = channels_name[i];
-                    if ( channel_name[0] != '#' ) {
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                    } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() == 10 ) {
-                        handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
-                    } else {
-                        Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL) {
-                            if (msg.size() != 1)
-                                handleNumReps(clientFileD, 475, channel_name );
-                            else {
-                                Channel newChannel( channel_name );
-                                Channels.push_back( newChannel );
-                                channel = &Channels.back();
-                                Clients[clientFileD].setOperator( true );
-                                channel->addClientToChannel( Clients[clientFileD] );
-                                Clients[clientFileD].addJoindChan();
-                                // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
-                                if (Clients[clientFileD].getOperator() == true) {
-                                    channel->addFirstOperator( nick );
-                                }
-                            }
-                        } else if (channel->isModeSet("k") && msg.size() < 2)
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                        else if (channel->isModeSet("k") == false && msg.size() != 1)
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                        else if (channel->isModeSet("l") && channel->getCapacityLimit() == (int)channel->getClientList().size()) {
-                            handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
-                        } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
-                            handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
-                        } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] && msg.size() != 2) { // #TODO: check if the args are more than 4
-                            handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                        } else if ( channel->clientExist(nick) ){
-                            handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
-                        }
-                        else {
-                            channel->addClientToChannel( Clients[clientFileD] );
-                            Clients[clientFileD].addJoindChan();
-                            std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
-                            if (!channel->getTopic().empty())
-                                send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
-                            std::map <std::string, Client> clients_list = channel->getClientList();
-                            for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                if ( it->first != nick ) {
-                                    send( it->second.getFd(), join.c_str(), join.size(), 0 );
-                                }
-                            }
-                        }
+                    std::string quitMsg = line.substr( sp + 1 );
+                    std::string quit = ": \033[1;33m" + nick + "\033[1;31m QUIT :\033[0m \033[1m" + quitMsg + "\r\n";
+                    for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
+                        if ( it->first != clientFileD )
+                            send( it->first, quit.c_str(), quit.size(), 0 );
                     }
-                } 
-            }// KICK command
-            else if (cmd == "KICK"){
-                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                std::string nick = Clients[clientFileD].getNickName();
-                std::string kick;
-                if ( msg.size() < 2 ) {
-                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                } else {
-                    std::string channel_name = msg[0];
-                    Channel* channel = searchChannel( channel_name );
-                    if ( channel == NULL ) {
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                    } else if ( channel->clientExist( nick ) == false ) {
-                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                    } else if ( nick != msg[1] ){
-                        if ( channel->isOperator( nick ) == false ) {
-                            handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
-                        } else {
-                            std::string kicked = msg[1];
-                            if ( channel->clientExist( kicked ) == false ) {
-                                handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
-                            } else {
-                                channel->removeClientFromChannel( kicked );
-                                Clients[clientFileD].delJoindChan();
-                                std::map <std::string, Client> clients_list = channel->getClientList();
-                                if ( msg.size() > 2){
-                                    std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                    kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;33m" + kicked + " : \033[0m \033[1m" + reason + "\r\n";
-                                    
-                                }else {
-                                    kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;31m" + kicked + "\033[0m\033[1m \r\n";
+                    std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
+                    close( clientFileD );
+                    Clients.erase( clientFileD );
+                } // JOIN COMMMAND
+                else if ( cmd == "JOIN"){
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    if (msg.size() < 2)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else {
+                        std::string channel_name;// = msg[0];
+                        std::string nick = Clients[clientFileD].getNickName();
+                        std::vector<std::string> channels_name = splitVec( msg[0], ',');
+                        std::vector<std::string> keys = splitVec( msg[1], ',');
+                        std::cout << "keys.size() = " << keys.size() << std::endl;
+                        std::cout << "channels_name.size() = " << channels_name.size() << std::endl;
+                        for (size_t i = 0; i < channels_name.size(); i++){
+                            channel_name = channels_name[i];
+                            if ( channel_name[0] != '#' ) {
+                                handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                            } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() > 9 ) {
+                                handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
+                            } else if (channels_name.size() != keys.size()) {
+                                handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                                break;
+                            }else if (channels_name.size() > 5) {
+                                handleNumReps( clientFileD, 504, channel_name ); //ERR_TOOMANYCHANN
+                                break;
+                            }else if (channel_name.size() > 20) {
+                                handleNumReps( clientFileD, 503, channel_name ); //ERR_CHANNELNAMETOOLONG
+                            }else {
+                                Channel* channel = searchChannel( channel_name );
+                                if ( channel == NULL) {
+                                    // if (msg.size() != 1)
+                                    //     handleNumReps(clientFileD, 475, channel_name );
+                                    // else {
+                                        Channel newChannel( channel_name );
+                                        Channels.push_back( newChannel );
+                                        channel = &Channels.back();
+                                        Clients[clientFileD].setOperator( true );
+                                        channel->addClientToChannel( Clients[clientFileD] );
+                                        Clients[clientFileD].addJoindChan();
+                                        // std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                        if (Clients[clientFileD].getOperator() == true) {
+                                            channel->addFirstOperator( nick );
+                                        // }
+                                    }
                                 }
-                                for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                    if ( it->first != Clients[clientFileD].getNickName() ) {
-                                        send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
+                                else if (channel->isModeSet("k") && keys[i] != channel->getChannelPassword())
+                                    handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                                else if (channel->isModeSet("k") == false && !keys[i].empty())
+                                    handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                                else if (channel->isModeSet("l") && channel->getCapacityLimit() == channel->getClientList().size()) {
+                                    handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
+                                } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
+                                    handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
+                                // } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] && msg.size() != 2) { // #TODO: check if the args are more than 4
+                                //     handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                                } else if ( channel->clientExist(nick) ){
+                                    handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
+                                }
+                                else {
+                                    channel->addClientToChannel( Clients[clientFileD] );
+                                    Clients[clientFileD].addJoindChan();
+                                    std::string join = ":\033[1;33m" + nick + "\033[0m\033[1;32m JOIN \033[0m\033[1;33m" + channel_name + "\033[0m\033[1m\r\n";
+                                    if (!channel->getTopic().empty())
+                                        send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
+                                    std::map <std::string, Client> clients_list = channel->getClientList();
+                                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                        if ( it->first != nick ) {
+                                            send( it->second.getFd(), join.c_str(), join.size(), 0 );
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            } // INVITE command
-            else if (cmd == "INVITE")
-            {
-                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                std::string nick = Clients[clientFileD].getNickName();
-                std::string invite;
-                std::string invited;
-                if ( msg.size() < 2)
-                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                else {
-                    std::string channel_name = msg[1];
-                    Channel* channel = searchChannel( channel_name );
-                    invited = msg[0];
-                    if ( channel == NULL ){
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                    } else if ( channel->clientExist( nick ) == false )
-                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                    else if ( server::searchByNName( invited ) == -1 )
-                        handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
+                }// KICK command 
+                else if (cmd == "KICK"){
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::string kick;
+                    if ( msg.size() < 2 ) {
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    } else {
+                        std::string channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        if ( channel == NULL ) {
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel->clientExist( nick ) == false ) {
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        } else if ( nick != msg[1] ){
+                            if ( channel->isOperator( nick ) == false ) {
+                                handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                            } else {
+                                std::string kicked = msg[1];
+                                if ( channel->clientExist( kicked ) == false ) {
+                                    handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
+                                } else {
+                                    channel->removeClientFromChannel( kicked );
+                                    Clients[clientFileD].delJoindChan();
+                                    std::map <std::string, Client> clients_list = channel->getClientList();
+                                    if ( msg.size() > 2){
+                                        std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
+                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;33m" + kicked + " : \033[0m \033[1m" + reason + "\r\n";
+                                        
+                                    }else {
+                                        kick = ": \033[1;33m" + nick + "\033[0m\033[1;31m KICK \033[0m\033[1;33m" + channel_name + " \033[0m\033[1;31m" + kicked + "\033[0m\033[1m \r\n";
+                                    }
+                                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                        if ( it->first != Clients[clientFileD].getNickName() ) {
+                                            send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } // INVITE command
+                else if (cmd == "INVITE")
+                {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::string invite;
+                    std::string invited;
+                    if ( msg.size() < 2)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                     else {
-                        channel->addInvited( invited );
-                        invite = ": \033[1;33m" + nick + "\033[1;32m INVITE \033[1;33m" + invited + " " + channel_name + "\033[0m \033[1m \r\n";
-                        send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        std::string channel_name = msg[1];
+                        Channel* channel = searchChannel( channel_name );
+                        invited = msg[0];
+                        if ( channel == NULL ){
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel->clientExist( nick ) == false )
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        else if ( server::searchByNName( invited ) == -1 )
+                            handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
+                        else {
+                            channel->addInvited( invited );
+                            invite = ": \033[1;33m" + nick + "\033[1;32m INVITE \033[1;33m" + invited + " " + channel_name + "\033[0m \033[1m \r\n";
+                            send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        }
                     }
-                }
-            } // TOPIC command
-            else if (cmd == "TOPIC") {
-                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                std::string topic;
-                std::string channel_name;
-                if (msg.size() < 1)
-                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                else {
-                    channel_name = msg[0];
-                    Channel* channel = searchChannel( channel_name );
-                    if ( channel == NULL )
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                    else if (channel->clientExist(nick) == false)
-                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                    else if (channel->isModeSet("t") && Clients[clientFileD].getOperator() == false && msg.size() > 1)
-                        handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
-                    else if (msg.size() > 1){   
-                        topic = line.substr( sp + 1 + msg[0].length() + 1 ) + "\r\n";
-                        channel->setTopic(topic);
-                    }
-                    else if (msg.size() == 1){
-                        send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
-                    }
-                }
-            } // MODE command
-            else if (cmd == "MODE") {
-                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
-                std::string modes;
-                std::string channel_name;
-                if (msg.size() < 2)
-                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                else {
-                    channel_name = msg[0];
-                    Channel* channel = searchChannel( channel_name );
-                    modes = msg[1];
-                    if ( channel == NULL )
-                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                } // TOPIC command
+                else if (cmd == "TOPIC") {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string topic;
+                    std::string channel_name;
+                    if (msg.size() < 1)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                     else {
-                        if (modes.length() != 2)
-                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                        else if (modes[1] != 'i' && modes[1] != 't' && msg.size() == 2)
-                            handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                        else if (modes[0] != '+' && modes[0] != '-')
-                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                        else if (channel->validMode(modes[1]) == false)
-                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                        else if (channel->isOperator(nick) == false)
-                            handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
-                        else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
-                            channel->addMode('i');
-                        else if (modes[0] == '-' && modes[1] == 'i' && channel->isModeSet("i") == true)
-                            channel->removeMode("i");
-                        else if (modes[0] == '+' && modes[1] == 'o')
-                        {
-                            if (channel->clientExist(msg[2]) == false)
-                                handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
-                            else if (channel->isOperator(msg[2]) == true)
-                                handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
-                            else
-                                channel->addOperator(msg[2]);
+                        channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        if ( channel == NULL )
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        else if (channel->clientExist(nick) == false)
+                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                        else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1)
+                            handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                        else if (msg.size() > 1){   
+                            topic = line.substr( sp + 1 + msg[0].length() + 1 ) + "\r\n";
+                            channel->setTopic(topic);
                         }
-                        else if (modes[0] == '-' && modes[1] == 'o')
-                        {
-                            if (channel->clientExist(msg[2]) == false)
-                                handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
-                            else if (channel->isOperator(msg[2]) == false)
-                                handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
-                            else
-                                channel->removeOperator(msg[2]);
+                        else if (msg.size() == 1){
+                            send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
                         }
-                        else if (modes[0] == '+' && modes[1] == 'k')
-                        {
-                            if (msg.size() < 3)
-                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                            else{
-                                channel->addMode('k');
-                                channel->setChannelPassword(msg[2]);
+                    }
+                } // MODE command
+                else if (cmd == "MODE") {
+                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
+                    std::string modes;
+                    std::string channel_name;
+                    if (msg.size() < 2)
+                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else {
+                        channel_name = msg[0];
+                        Channel* channel = searchChannel( channel_name );
+                        modes = msg[1];
+                        if ( channel == NULL )
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        else {
+                            if (modes.length() != 2)
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (modes[1] != 'i' && modes[1] != 't' && msg.size() == 2)
+                                handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                            else if (modes[0] != '+' && modes[0] != '-')
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (channel->validMode(modes[1]) == false)
+                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                            else if (channel->isOperator(nick) == false)
+                                handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
+                            else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
+                                channel->addMode('i');
+                            else if (modes[0] == '-' && modes[1] == 'i' && channel->isModeSet("i") == true)
+                                channel->removeMode("i");
+                            else if (modes[0] == '+' && modes[1] == 'o')
+                            {
+                                if (channel->clientExist(msg[2]) == false)
+                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                                else if (channel->isOperator(msg[2]) == true)
+                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                                else {
+                                    channel->addOperator(msg[2]);
+                                }
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'o')
+                            {
+                                if (channel->clientExist(msg[2]) == false)
+                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                                else if (channel->isOperator(msg[2]) == false)
+                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                                else
+                                    channel->removeOperator(msg[2]);
+                            }
+                            else if (modes[0] == '+' && modes[1] == 'k')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else{
+                                    channel->addMode('k');
+                                    channel->setChannelPassword(msg[2]);
+                                }
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'k')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->getChannelPassword() != msg[2])
+                                    handleNumReps(clientFileD, 475, channel_name); //ERR_BADCHANNELKEY
+                                else{
+                                    channel->removeMode("k");
+                                    channel->setChannelPassword("");
+                                }
+                            }
+                            else if (modes[0] == '+' && modes[1] == 'l')
+                            {
+                                if (msg.size() < 3)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->isModeSet("l") == true)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else{
+                                    channel->addMode('l');
+                                    channel->_strLimit = msg[2];
+                                    channel->setCapacityLimit(atoi(msg[2].c_str()));
+                                }
+                            }
+                            else if (modes[0] == '-' && modes[1] == 'l')
+                            {
+                                if (msg.size() < 2)
+                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                                else if (channel->isModeSet("l") == false)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else{
+                                    channel->removeMode("l");
+                                    channel->setCapacityLimit(-1);
+                                }
+                            }
+                            else if (modes[0] == '+' && modes [1] == 't')
+                            {
+                                if (channel->isModeSet("t") == true)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else
+                                    channel->addMode('t');
+                            }
+                            else if (modes[0] == '-' && modes [1] == 't')
+                            {
+                                if (channel->isModeSet("t") == false)
+                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                                else
+                                    channel->removeMode("t");
+                            }
+                            else
+                                handleNumReps(clientFileD, 501, line); //ERR_UMODEUNKNOWNFLAG
+                        }
+                    }
+                } else if (cmd == "/EMET"){
+                    std::string emet_help = "\033[1;33m Usage: /EMET [OPTION] [ARGUMENT]\033[0m\n"
+                        "\033[1;30m Options:\n"
+                        "   -h, --help\t\tDisplay this help and exit\n"
+                        "   -c, --channels list\t\tList all channels available\n"
+                        "   -u, --users list\t\tList all users connected\n"
+                        "   -cu, --list-users [CHANNEL]\t\tList all users in a specific channel\n"
+                        "   -cm, --channel-mode [CHANNEL]\t\tList all modes of a specific channel\n"
+                        "   -i, --invited \t\tAll channels you are invited to\033[0m\033[1m\r\n";
+                    std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ' );
+                    std::string msg;
+                    if (option[0] == "-h" && option.size() < 2){
+                        send( clientFileD, emet_help.c_str(), emet_help.size(), 0 );
+                    } else if (option[0] == "-c" && option.size() < 2) {
+                        msg = "\033[1;30mChannels Available: \r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
+                            msg = "\033[1;33m- " + it->getName() + "\033[0m\033[1m\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }
+                    } else if (option[0] == "-u" && option.size() < 2) {
+                        msg = "\033[1;30mUsers Connected: \r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++){
+                            msg = "\033[1;33m- " + it->second.getNickName() + "\033[0m\033[1m\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }
+                    } else if (option[0] == "-cu" && option.size() == 2) {
+                        Channel* channel = searchChannel( option[1] );
+                        if (channel == NULL) {
+                            handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
+                        } else if (channel->clientExist(nick) == false){
+                            msg = "\033[1;31m(Permession denied!)\033[0m\n"
+                                "\033[1;30mYou are not in the channel\033[1m\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }else {
+                            std::map<std::string, Client> clients = channel->getClientList();
+                            msg = "\033[1;30m"+ option[1] + " Users: \r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                            for (std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++){
+                                msg = "\033[1;33m- " + it->first + "\033[0m\033[1m\r\n";
+                                send( clientFileD, msg.c_str(), msg.size(), 0 );
                             }
                         }
-                        else if (modes[0] == '-' && modes[1] == 'k')
-                        {
-                            if (msg.size() < 3)
-                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                            else if (channel->getChannelPassword() != msg[2])
-                                handleNumReps(clientFileD, 475, channel_name); //ERR_BADCHANNELKEY
-                            else{
-                                channel->removeMode("k");
-                                channel->setChannelPassword("");
+                    } else if (option[0] == "-cm" && option.size() == 2) {
+                        Channel* channel = searchChannel( option[1] );
+                        if (channel == NULL) {
+                            handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
+                        } else if (channel->clientExist(nick) == false){
+                            msg = "\033[1;31m(Permession denied!)\033[0m\n"
+                                "\033[1;30mYou are not in the channel\033[1m\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }else {
+                            msg = "\033[1;30m"+ option[1] + " Modes: \r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                            msg = "\033[1;33m- ";
+                            if (channel->isModeSet("i")){
+                                msg += "- Mode (i) : Invite Only\r\n";
+                            } if (channel->isModeSet("t")){
+                                msg += "- Mode (t) : Topic Set\r\n";
+                            } if (channel->isModeSet("o"))
+                            {
+                                msg += "- Mode (o) : Operators [";
+                                for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
+                                    msg += *it + " ";
+                                }
+                                msg += "]\r\n";
+                            } if (channel->isModeSet("k")) {
+                                msg += "- Mode (k) : Password Set\r\n";
+                            } if (channel->isModeSet("l")) {
+                                msg += "- Mode (l) : Capacity Limit (" + channel->_strLimit + ")\r\n";
+                            }
+                            msg += "\033[0m\033[1m\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }
+                    } else if (option[0] == "-i" && option.size() < 2) {
+                        msg = "\033[1;30mChannels You are Invited to: \r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        bool check = false;
+                        for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
+                            if (it->isInvited(nick)){
+                                check = true;
+                                msg = "\033[1;33m- " + it->getName() + "\033[0m\033[1m\r\n";
+                                send( clientFileD, msg.c_str(), msg.size(), 0 );
+                            }
+                            if (!check){
+                                msg = "\033[1;33m- No Channels Invited to\r\n";
+                                send( clientFileD, msg.c_str(), msg.size(), 0 );
                             }
                         }
-                        else if (modes[0] == '+' && modes[1] == 'l')
-                        {
-                            if (msg.size() < 3)
-                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                            else if (channel->isModeSet("l") == true)
-                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                            else{
-                                channel->addMode('l');
-                                channel->setCapacityLimit(atoi(msg[2].c_str()));
-                            }
+                        
+                    } else {
+                        send( clientFileD, emet_help.c_str(), emet_help.size(), 0 );
+                    }
+                }
+                else if ( cmd == "BOT" ) {
+                    // std::string bot = "I am Thaaa BOT\r\n";
+                    // send( clientFileD, bot.c_str(), bot.size(), 0);
+                    std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ');
+
+                    if ( option[0] == "--help" || option[0] == "-h" ) {
+                        std::string help = "NAME :\r\n    BOT\r\nSYNOPSIS :\r\n    BOT [Option]\r\nVALID OPTIONS :\r\n    -h, --help : shows informations about the Bot.\r\n    -d : shows the duration you have been online on the our IRCserver\r\n    -cc : this is the channel counter, it tells you how many channels you are currenly a member of\r\n";
+                        send( clientFileD, help.c_str(), help.size(), 0 );
+                    } else if ( option[0] == "-d" ) {
+                        // Record the end time
+                        time_t endChrono = time(NULL);
+                    
+                        // Calculate the duration
+                        double duration = difftime(endChrono, startChronoBot);
+                        int minutes = static_cast<int>(duration) / 60;
+                        int remainingSeconds = static_cast<int>(duration) % 60;
+                        
+                        std::ostringstream oss;
+                        if (minutes > 0) {
+                            oss << minutes << "min";
                         }
-                        else if (modes[0] == '-' && modes[1] == 'l')
-                        {
-                            if (msg.size() < 3)
-                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                            else if (channel->isModeSet("l") == false)
-                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                            else{
-                                channel->removeMode("l");
-                                channel->setCapacityLimit(0);
-                            }
+                        if (remainingSeconds > 0 || minutes == 0) {
+                            if (minutes > 0) oss << " ";
+                            oss << remainingSeconds << "s";
                         }
-                        else if (modes[0] == '+' && modes [1] == 't')
-                        {
-                            if (channel->isModeSet("t") == true)
-                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                            else
-                                channel->addMode('t');
-                        }
-                        else if (modes[0] == '-' && modes [1] == 't')
-                        {
-                            if (channel->isModeSet("t") == false)
-                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                            else
-                                channel->removeMode("t");
-                        }
+        
+                        std::string ConnectionChrono =  "You have been online on the server for : " + oss.str() + " now.\r\n";
+                        send( clientFileD, ConnectionChrono.c_str(), ConnectionChrono.size(), 0 );
+                    }
+                    else if ( option[0] == "-cc" ) { //for channel counter
+                        int count = Clients[clientFileD].getChanLimit();
+                        std::ostringstream oss_count;
+                        oss_count << count;
+                        std::string counter;
+                        if ( count <= 1 )
+                            counter = "You are currently a member in " + oss_count.str() + " channel\r\n";
                         else
-                            handleNumReps(clientFileD, 501, line); //ERR_UMODEUNKNOWNFLAG
+                            counter = "You are currently a member in " + oss_count.str() + " channels\r\n";
+                        send( clientFileD, counter.c_str(), counter.size(), 0 );
+                        
                     }
-                }
-            }
-
-
-            else if ( cmd == "BOT" ) {
-                // std::string bot = "I am Thaaa BOT\r\n";
-                // send( clientFileD, bot.c_str(), bot.size(), 0);
-                std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ');
-
-                if ( option[0] == "--help" || option[0] == "-h" ) {
-                    std::string help = "NAME :\r\n    BOT\r\nSYNOPSIS :\r\n    BOT [Option]\r\nVALID OPTIONS :\r\n    -h, --help : shows informations about the Bot.\r\n    -d : shows the duration you have been online on the our IRCserver\r\n    -cc : this is the channel counter, it tells you how many channels you are currenly a member of\r\n";
-                    send( clientFileD, help.c_str(), help.size(), 0 );
-                } else if ( option[0] == "-d" ) {
-                    // Record the end time
-                    time_t endChrono = time(NULL);
-                
-                    // Calculate the duration
-                    double duration = difftime(endChrono, startChronoBot);
-                    int minutes = static_cast<int>(duration) / 60;
-                    int remainingSeconds = static_cast<int>(duration) % 60;
                     
-                    std::ostringstream oss;
-                    if (minutes > 0) {
-                        oss << minutes << "min";
+                    else {
+                        std::string noOption = "Try BOT -h/--help to show all the valid options IRCbot can do.\r\n";
+                        send( clientFileD, noOption.c_str(), noOption.size(), 0 );
+                        return ;
                     }
-                    if (remainingSeconds > 0 || minutes == 0) {
-                        if (minutes > 0) oss << " ";
-                        oss << remainingSeconds << "s";
-                    }
-    
-                    std::string ConnectionChrono =  "You have been online on the server for : " + oss.str() + " now.\r\n";
-                    send( clientFileD, ConnectionChrono.c_str(), ConnectionChrono.size(), 0 );
                 }
-                else if ( option[0] == "-cc" ) { //for channel counter
-                    int count = Clients[clientFileD].getChanLimit();
-                    std::ostringstream oss_count;
-                    oss_count << count;
-                    std::string counter;
-                    if ( count <= 1 )
-                        counter = "You are currently a member in " + oss_count.str() + " channel\r\n";
-                    else
-                        counter = "You are currently a member in " + oss_count.str() + " channels\r\n";
-                    send( clientFileD, counter.c_str(), counter.size(), 0 );
-                    
-                }
-                
                 else {
-                    std::string noOption = "Try BOT -h/--help to show all the valid options IRCbot can do.\r\n";
-                    send( clientFileD, noOption.c_str(), noOption.size(), 0 );
-                    return ;
+                    std::string msg = "\033[1;31mInvalid Command!\033[0m\033[1m\r\n";
+                    send( clientFileD, msg.c_str(), msg.size(), 0 );
                 }
-            }
-
         }
     }
 }

@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/08/04 00:41:49 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/11 15:22:49 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,8 @@ void server::errMsg_insert() {
     errMsg.insert( std::make_pair( 441, "\033[1;31m :They aren't on that channel\033[0m\033[1m\r\n") );
     errMsg.insert( std::make_pair( 501, "\033[1;31m :Unknown MODE flag\033[0m\033[1m\r\n" ) );
     errMsg.insert( std::make_pair( 502, "\033[1;31m :MODE is already set\033[0m\033[1m\r\n"));
+    errMsg.insert( std::make_pair( 503, "\033[1;31m :Channel name too long\033[0m\033[1m\r\n"));
+    errMsg.insert( std::make_pair( 504, "\033[1;31m :Too many channels\033[0m\033[1m\r\n"));
     errMsg.insert( std::make_pair( 432, " :Erroneus nickname\r\n"));
 }
 
@@ -60,7 +62,7 @@ void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
     else if ( replyCode == 404 ) // ERR_CANNOTSENDTOCHAN
         err = ":" + hostname + " 404 " + nickname + " " + cmd + errMsg[replyCode];
     else if ( replyCode == 405 ) // ERR_TOOMANYCHANNELS
-        err = client + " " + cmd + errMsg[replyCode];
+        err = ":" + hostname + " 405 " + nickname + errMsg[replyCode];
     else if ( replyCode == 407 ) // ERR_TOOMANYTARGETS
         err = client + errMsg[replyCode];
     else if ( replyCode == 411 ) // ERR_NORECIPIENT
@@ -72,7 +74,7 @@ void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
     else if ( replyCode == 442 ) // ERR_NOTONCHANNEL
         err = ":" + hostname + " 442 " + nickname + errMsg[replyCode];
     else if ( replyCode == 443 ) // ERR_USERONCHANNEL
-        err = nickname + errMsg[replyCode];
+        err = ":" + hostname + " 443 " + nickname + " " + cmd + errMsg[replyCode];
     else if ( replyCode == 451 ) // ERR_NOTREGISTERED
         err =  ":" + hostname + " 451 " + cmd + errMsg[replyCode];
     else if ( replyCode == 461 ) // ERR_NEEDMOREPARAMS
@@ -99,6 +101,12 @@ void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
         err = client + errMsg[replyCode];
     else if ( replyCode == 331 )
         err = ":" + hostname + " 331 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 503 ) // ERR_CHANNELNAMELONG
+        err = ":" + hostname + " 503 " + nickname + errMsg[replyCode];
+    else if ( replyCode == 502 ) // ERR_MODEALREADYSET
+        err = ":" + hostname + " 502 " + nickname + " " + cmd + errMsg[replyCode];
+    else if ( replyCode == 504 ) // ERR_TOOMANYCHANN
+        err = ":" + hostname + " 504 " + nickname + errMsg[replyCode];
 
     send( cl_fd, err.c_str(), err.size(), 0 );
 }

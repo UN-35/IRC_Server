@@ -19,17 +19,18 @@ class Channel
 		std::string						_operatorPassword;
 		std::string						_topic;
 		std::string						_channel_password;
-		int								_limit;
+		size_t							_limit;
 	public:
 		Channel(std::string const &name);
 		~Channel();
+        std::string                     _strLimit;
 
         /* Getters and Setters */
 		std::string&					getName();
 		std::string&					getTopic();
 		std::vector<std::string>&		getMode();
 		std::string&					getChannelPassword();
-		int&							getCapacityLimit();
+		size_t&							getCapacityLimit();
 		std::vector<std::string>&		getOperators();
 		std::vector<std::string>&		getKickedUsers();
 		std::map <std::string, Client>&	getClientList();

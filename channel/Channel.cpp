@@ -1,6 +1,6 @@
 #include "Channel.hpp"
 
-Channel::Channel(std::string const &name) : _name(name), _limit(-1){
+Channel::Channel(std::string const &name) : _name(name), _channel_password(""),_limit(-1){
     _clientList.clear();
     _kicked_users.clear();
     _invited.clear();
@@ -13,7 +13,7 @@ Channel::~Channel() {}
 std::string& Channel::getName() {return _name;}
 std::string& Channel::getTopic() {return _topic;}
 std::string& Channel::getChannelPassword() {return _channel_password;}
-int& Channel::getCapacityLimit() {return _limit;}
+size_t& Channel::getCapacityLimit() {return _limit;}
 std::vector<std::string>& Channel::getMode() {return _mode;}
 std::vector<std::string>& Channel::getOperators() {return _operators;}
 std::map <std::string, Client>& Channel::getClientList() {return _clientList;}
@@ -22,7 +22,10 @@ std::vector<std::string>& Channel::getInvitedUsers() {return _invited;}
 
 void Channel::setTopic(std::string& newTopic) {_topic = newTopic;}
 void Channel::setChannelPassword(std::string password) {_channel_password = password;}
-void Channel::setCapacityLimit(int limit) {_limit = limit;}
+void Channel::setCapacityLimit(int limit) {
+    std::cout << "limit set to: " << limit << std::endl;
+    _limit = limit;
+}
 bool Channel::clientExist(std::string &clientName) {
     if (_clientList.size() == 0)
         return false;
