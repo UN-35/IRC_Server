@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:13 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/07/26 10:59:28 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/12 15:08:34 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ class Client {
         bool operat;
         bool regist;
         int  chan_limit;
+        bool iMode;
         
     public:
         Client();
@@ -40,6 +41,7 @@ class Client {
         void setBuffer( std::string buff );
         void setOperator( bool is_operator );
         void setRegistration( bool is_regist );
+        void setiMode( bool is_iMode );
 // reset/erase buffer
         void erase_buff();
 // get
@@ -47,6 +49,7 @@ class Client {
         std::string getUserName();
         std::string getBuffer();
         bool getOperator();
+        bool getiMode();
         bool getRegistration();
         int getFd();
         int getChanLimit();

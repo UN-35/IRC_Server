@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:16 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/11 18:32:19 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/09/12 15:09:29 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _pas
     auth[2] = false;
     operat = false;
     regist = false;
+    iMode = false;
 }
 Client::~Client() {}
 
@@ -32,6 +33,7 @@ void Client::setUserName( std::string uName ) { this->userName = uName; }
 void Client::setBuffer( std::string buff ) { this->buffer += buff; }
 void Client::setOperator( bool is_operator ) { this->operat = is_operator; }
 void Client::setRegistration( bool is_regist ) { this->regist = is_regist; }
+void Client::setiMode( bool is_iMode ) { this->iMode = is_iMode; }
 
 void Client::erase_buff() { this->buffer.erase(); }
 
@@ -44,3 +46,4 @@ bool Client::getRegistration() { return this->regist; }
 int Client::getChanLimit() { return this->chan_limit; }
 void Client::addJoindChan() { this->chan_limit++; }
 void Client::delJoindChan() { this->chan_limit--; }
+bool Client::getiMode() { return this->iMode; }

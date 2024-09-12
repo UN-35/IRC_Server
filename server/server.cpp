@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/11 19:19:46 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/09/12 23:51:17 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,6 +226,7 @@ void server::ClientRecv( int clientFileD ) {
                 //
             }
         } else {
+            std::cout << "line = " << line << std::endl;
             if ( Clients[clientFileD].auth[2] == false ) {
                 handleNumReps( clientFileD, 451, line ); // ERR_NOTREGISTERED
                 return ;
@@ -243,16 +244,17 @@ void server::ClientRecv( int clientFileD ) {
                     {
                         Channel* channel = searchChannel( msg[0]);
                         if ( channel == NULL ) {
+                            send( clientFileD, "HER1\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, msg[0] ); //ERR_NOSUCHCHANNEL
                         }
                         else if ( channel->clientExist( nick ) == false ){
                             handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
                         }
                         else {
-                            std::map <std::string, Client> clients = channel->getClientList();
-                            for ( std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++ ) {
+                            std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " :" + message + "\r\n";
+                            std::map <std::string, Client> clients_list = channel->getClientList();
+                            for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                 if ( it->first != nick ) {
-                                    std::string msgToSend = ": " + nick + " PRIVMSG " + channel_name + "  :" + message + "\r\n";
                                     send( it->second.getFd(), msgToSend.c_str(), msgToSend.size(), 0 );
                                 }
                             }
@@ -263,7 +265,7 @@ void server::ClientRecv( int clientFileD ) {
                         if ( fd == -1 ) {
                             handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                         } else {
-                            std::string msgToSend = ": " + nick + "  PRIVMSG " + channel_name + "  :" + message + "\r\n";
+                            std::string msgToSend = ": " + nick + "  PRIVMSG " + channel_name + " " + message + "\r\n";
                             send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                         }
                     }
@@ -297,12 +299,15 @@ void server::ClientRecv( int clientFileD ) {
                 }
             }
             else if( cmd == "PING" ) {
-                std::string pong = "PONG " + line.substr( sp ) + "\r\n";
+                std::string pong = "PONG " + line.substr( sp + 1 ) + "\r\n";
+                if ( line.substr( sp + 1 ) == hostname){
+                    send( clientFileD, pong.c_str(), pong.size(), 0 );
+                }
                 send( clientFileD, pong.c_str(), pong.size(), 0 );
             }
             else if ( cmd == "QUIT") {
                     std::string quitMsg = line.substr( sp + 1 );
-                    std::string quit = ": " + nick + " QUIT : " + quitMsg + "\r\n";
+                    std::string quit = ": " + nick + " QUIT "+ quitMsg + "\r\n";
                     for ( std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++ ) {
                         if ( it->first != clientFileD )
                             send( it->first, quit.c_str(), quit.size(), 0 );
@@ -313,22 +318,25 @@ void server::ClientRecv( int clientFileD ) {
                 } // JOIN COMMMAND
                 else if ( cmd == "JOIN"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    if (msg.size() < 2)
-                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    if (msg.size() < 1 || msg.size() > 2)
+                        handleNumReps( clientFileD, 505, line ); //ERR_NEEDMOREPARAMS
                     else {
                         std::string channel_name;// = msg[0];
                         std::string nick = Clients[clientFileD].getNickName();
                         std::vector<std::string> channels_name = splitVec( msg[0], ',');
-                        std::vector<std::string> keys = splitVec( msg[1], ',');
-                        std::cout << "keys.size() = " << keys.size() << std::endl;
-                        std::cout << "channels_name.size() = " << channels_name.size() << std::endl;
+                        std::vector<std::string> keys = splitVec( "", ',');
+                        if (msg.size() == 2)
+                            keys = splitVec( msg[1], ',');
+                        // std::cout << "keys.size() = " << keys.size() << std::endl;
+                        // std::cout << "channels_name.size() = " << channels_name.size() << std::endl;
                         for (size_t i = 0; i < channels_name.size(); i++){
                             channel_name = channels_name[i];
                             if ( channel_name[0] != '#' ) {
+                                // send( clientFileD, "HER2\r\n", 6, 0 );
                                 handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                             } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() > 9 ) {
                                 handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
-                            } else if (channels_name.size() != keys.size()) {
+                            } else if (!keys.empty() && channels_name.size() != keys.size()) {
                                 handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                                 break;
                             }else if (channels_name.size() > 5) {
@@ -354,7 +362,7 @@ void server::ClientRecv( int clientFileD ) {
                                         // }
                                     }
                                 }
-                                else if (channel->isModeSet("k") && keys[i] != channel->getChannelPassword())
+                                else if (channel->isModeSet("k") && ( keys.empty() || keys[i] != channel->getChannelPassword()))
                                     handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                                 else if (channel->isModeSet("k") == false && !keys[i].empty())
                                     handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
@@ -394,6 +402,7 @@ void server::ClientRecv( int clientFileD ) {
                         std::string channel_name = msg[0];
                         Channel* channel = searchChannel( channel_name );
                         if ( channel == NULL ) {
+                            // send( clientFileD, "HER3\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                         } else if ( channel->clientExist( nick ) == false ) {
                             handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
@@ -438,6 +447,7 @@ void server::ClientRecv( int clientFileD ) {
                         Channel* channel = searchChannel( channel_name );
                         invited = msg[0];
                         if ( channel == NULL ){
+                            // send( clientFileD, "HER4\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                         } else if ( channel->clientExist( nick ) == false )
                             handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
@@ -459,8 +469,10 @@ void server::ClientRecv( int clientFileD ) {
                     else {
                         channel_name = msg[0];
                         Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL )
+                        if ( channel == NULL ){
+                            // send( clientFileD, "HER5\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        }
                         else if (channel->clientExist(nick) == false)
                             handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
                         else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1)
@@ -480,12 +492,17 @@ void server::ClientRecv( int clientFileD ) {
                     std::string channel_name;
                     if (msg.size() < 2)
                         handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                    else if (msg[0] == nick ){
+                        // Do nothing ---------------
+                    }
                     else {
                         channel_name = msg[0];
                         Channel* channel = searchChannel( channel_name );
                         modes = msg[1];
-                        if ( channel == NULL )
+                        if ( channel == NULL ){
+                            // send( clientFileD, "HER6\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        }
                         else {
                             if (modes.length() != 2)
                                 handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
@@ -601,16 +618,19 @@ void server::ClientRecv( int clientFileD ) {
                             msg = "- " + it->getName() + "\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
-                    } else if (option[0] == "-u" && option.size() < 2) {
-                        msg = "Users Connected: \r\n";
-                        send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++){
-                            msg = "- " + it->second.getNickName() + "\r\n";
-                            send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        }
+                    // } else if (option[0] == "-u" && option.size() < 2) {
+                    //     msg = "Users Connected: \r\n";
+                    //     send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    //     for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++){
+                    //         if ( it->first. ){
+                    //             msg = "- " + it->second.getNickName() + "\r\n";
+                    //             send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    //         }
+                    //     }
                     } else if (option[0] == "-cu" && option.size() == 2) {
                         Channel* channel = searchChannel( option[1] );
                         if (channel == NULL) {
+                            // send( clientFileD, "HER7\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
                         } else if (channel->clientExist(nick) == false){
                             msg = "(Permession denied!)\n"
@@ -628,6 +648,7 @@ void server::ClientRecv( int clientFileD ) {
                     } else if (option[0] == "-cm" && option.size() == 2) {
                         Channel* channel = searchChannel( option[1] );
                         if (channel == NULL) {
+                            // send( clientFileD, "HER8\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
                         } else if (channel->clientExist(nick) == false){
                             msg = "(Permession denied!)\n"
@@ -724,10 +745,10 @@ void server::ClientRecv( int clientFileD ) {
                         return ;
                     }
                 }
-                else {
-                    std::string msg = "Invalid Command!\r\n";
-                    send( clientFileD, msg.c_str(), msg.size(), 0 );
-                }
+                // else {
+                //     std::string msg = "Invalid Command!\r\n";
+                //     send( clientFileD, msg.c_str(), msg.size(), 0 );
+                // }
         }
     }
 }

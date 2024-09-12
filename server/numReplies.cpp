@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   numReplies.cpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/11 19:14:59 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/09/12 23:24:45 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ void server::errMsg_insert() {
     errMsg.insert( std::make_pair( 502, " :MODE is already set\r\n"));
     errMsg.insert( std::make_pair( 503, " :Channel name too long\r\n"));
     errMsg.insert( std::make_pair( 504, " :Too many channels\r\n"));
+    errMsg.insert( std::make_pair( 505, " :Wrong number of parameters\r\n"));
     errMsg.insert( std::make_pair( 432, " :Erroneus nickname\r\n"));
 }
 
