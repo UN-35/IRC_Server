@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/12 23:51:17 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/13 13:09:12 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -379,8 +379,10 @@ void server::ClientRecv( int clientFileD ) {
                                     channel->addClientToChannel( Clients[clientFileD] );
                                     Clients[clientFileD].addJoindChan();
                                     std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
-                                    if (!channel->getTopic().empty())
-                                        send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
+                                    if (!channel->getTopic().empty()){
+                                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                                        send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
+                                    }
                                     std::map <std::string, Client> clients_list = channel->getClientList();
                                     for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                         if ( it->first != nick ) {
@@ -419,16 +421,15 @@ void server::ClientRecv( int clientFileD ) {
                                     std::map <std::string, Client> clients_list = channel->getClientList();
                                     if ( msg.size() > 2){
                                         std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                        kick = ": " + nick + " KICK " + channel_name + " " + kicked + " :  " + reason + "\r\n";
+                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
                                         
                                     }else {
-                                        kick = ": " + nick + " KICK " + channel_name + " " + kicked + " \r\n";
+                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + "\r\n";
                                     }
                                     for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                        if ( it->first != Clients[clientFileD].getNickName() ) {
-                                            send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
-                                        }
+                                        send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
                                     }
+                                    send( server::searchByNName( kicked ), kick.c_str(), kick.size(), 0 );
                                 }
                             }
                         }
@@ -469,20 +470,36 @@ void server::ClientRecv( int clientFileD ) {
                     else {
                         channel_name = msg[0];
                         Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL ){
-                            // send( clientFileD, "HER5\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                        }
-                        else if (channel->clientExist(nick) == false)
-                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                        else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1)
-                            handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
-                        else if (msg.size() > 1){   
-                            topic = line.substr( sp + 1 + msg[0].length() + 1 ) + "\r\n";
+                        if (channel == NULL) {
+                            handleNumReps(clientFileD, 403, channel_name); // ERR_NOSUCHCHANNEL
+                        } else if (!channel->clientExist(nick)) {
+                            handleNumReps(clientFileD, 442, nick); // ERR_NOTONCHANNEL
+                        } else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1) {
+                            handleNumReps(clientFileD, 482, nick); // ERR_CHANOPRIVSNEEDED
+                        } else if (msg.size() > 1) { // The client is setting a new topic
+                            topic = line.substr(sp + 1 + msg[0].length() + 1) + "\r\n";
                             channel->setTopic(topic);
-                        }
-                        else if (msg.size() == 1){
-                            send( clientFileD, channel->getTopic().c_str(), channel->getTopic().size(), 0 );
+
+                            // Notify the channel about the new topic (RPL_TOPIC)
+                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + topic;
+                            for (std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++) {
+                                send(it->second.getFd(), topicMessage.c_str(), topicMessage.size(), 0);
+                            }
+
+                        } else if (msg.size() == 1) { // The client is requesting the current topic
+                            if (channel->getTopic().empty()) {
+                                // No topic is set, send RPL_NOTOPIC (331)
+                                std::string noTopicMessage = ":server_name 331 " + nick + " " + channel_name + " :No topic is set\r\n";
+                                send(clientFileD, noTopicMessage.c_str(), noTopicMessage.size(), 0);
+                            } else {
+                                // A topic is set, send RPL_TOPIC (332)
+                                std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                                send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
+
+                                // Optionally, send the topic setter information (RPL_TOPICWHOTIME 333)
+                                // std::string topicInfoMessage = ":server_name 333 " + nick + " " + channel_name + " " + channel->getTopicSetter() + " " + std::to_string(channel->getTopicTimestamp()) + "\r\n";
+                                // send(clientFileD, topicInfoMessage.c_str(), topicInfoMessage.size(), 0);
+                            }
                         }
                     }
                 } // MODE command
