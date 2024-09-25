@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/13 13:09:12 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/09/25 22:25:00 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -312,9 +312,15 @@ void server::ClientRecv( int clientFileD ) {
                         if ( it->first != clientFileD )
                             send( it->first, quit.c_str(), quit.size(), 0 );
                     }
-                    std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
+                    std::cout << "Client [ " << Clients[clientFileD].getNickName() << " ] Left the CLUUB!" << std::endl;
                     close( clientFileD );
                     Clients.erase( clientFileD );
+                    Clients[clientFileD].setNickName("");
+                    Clients[clientFileD].setUserName("");
+                    Clients[clientFileD].setChanLimit(0);
+                    //
+                    //
+                    //
                 } // JOIN COMMMAND
                 else if ( cmd == "JOIN"){
                     std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
