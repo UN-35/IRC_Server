@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:16 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/25 22:05:26 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/10/05 17:34:52 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ void Client::setBuffer( std::string buff ) { this->buffer += buff; }
 void Client::setOperator( bool is_operator ) { this->operat = is_operator; }
 void Client::setRegistration( bool is_regist ) { this->regist = is_regist; }
 void Client::setiMode( bool is_iMode ) { this->iMode = is_iMode; }
+void Client::setFd( int fd ) { this->fd_client = fd; }
 void Client::setChanLimit( int limit ) { this->chan_limit = limit; }
 
 

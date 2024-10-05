@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/30 10:23:03 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/05 17:53:09 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,7 @@ void server::newUser() {
     poll_vec.push_back( pollClient );
     Client _client( fdClient, passwd );
     Clients.insert( std::make_pair( fdClient, _client ) );
+    Clients[fdClient].setFd( fdClient );
     std::cout << "The Client [ " << fdClient << " ] connected!" << std::endl;
 }
 
@@ -236,6 +237,9 @@ void server::ClientRecv( int clientFileD ) {
                 //
             }
         } else {
+            // Clients[clientFileD].setFd( clientFileD );
+            // std::cout << "Client [ " << clientFileD << " ] is connected ---------------!" << std::endl;
+            // std::cout << "Client [ " << Clients[clientFileD].getFd() << " ] is connected (getfd) ---------------!" << std::endl;
             std::cout << "line = " << line << std::endl;
             if ( Clients[clientFileD].auth[2] == false ) {
                 handleNumReps( clientFileD, 451, line ); // ERR_NOTREGISTERED
@@ -254,7 +258,6 @@ void server::ClientRecv( int clientFileD ) {
                     {
                         Channel* channel = searchChannel( msg[0]);
                         if ( channel == NULL ) {
-                            send( clientFileD, "HER1\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, msg[0] ); //ERR_NOSUCHCHANNEL
                         }
                         else if ( channel->clientExist( nick ) == false ){
@@ -275,7 +278,7 @@ void server::ClientRecv( int clientFileD ) {
                         if ( fd == -1 ) {
                             handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                         } else {
-                            std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " :" + message + "\r\n";
+                            std::string msgToSend = ":" + nick + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
                             send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                         }
                     }
@@ -323,8 +326,15 @@ void server::ClientRecv( int clientFileD ) {
                         Channel* channel = &(*it);
                         if ( channel->clientExist( nick ) ) {
                             channel->removeClientFromChannel( nick );
-                            for ( std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++ ) {
-                                send( it->second.getFd(), quit.c_str(), quit.size(), 0 );
+                            std::map <std::string, Client> clients_list = channel->getClientList();
+                            if (clients_list.size() == 0)
+                            {
+                                channel->removeChannel();
+                                // Channels.erase(it);
+                            } else {
+                                for ( std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++ ) {
+                                    send( it->second.getFd(), quit.c_str(), quit.size(), 0 );
+                                }
                             }
                         }
                     }
@@ -372,13 +382,13 @@ void server::ClientRecv( int clientFileD ) {
                                     Channel* channel = &(*it);
                                     if (channel->clientExist(nick)) {
                                         std::string chan = channel->getName();
-                                        channel->removeClientFromChannel(nick);
-                                        Clients[clientFileD].delJoindChan();
                                         std::string part = ":" + nick + " PART " + chan + "\r\n";
                                         std::map <std::string, Client> clients_list = channel->getClientList();
                                         for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
                                             send(it->second.getFd(), part.c_str(), part.size(), 0);
                                         }
+                                        channel->removeClientFromChannel(nick);
+                                        Clients[clientFileD].delJoindChan();
                                     }
                                 }
                             }
@@ -759,6 +769,12 @@ void server::ClientRecv( int clientFileD ) {
                         }
                     } else if (option[0] == "-cm" && option.size() == 2) {
                         Channel* channel = searchChannel( option[1] );
+                        std::string msg;
+                         for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
+                                    msg += *it + " ";
+                                }
+                        msg += "]\r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
                         if (channel == NULL) {
                             // send( clientFileD, "HER8\r\n", 6, 0 );
                             handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL

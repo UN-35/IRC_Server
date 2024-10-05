@@ -23,7 +23,7 @@ std::vector<std::string>& Channel::getInvitedUsers() {return _invited;}
 void Channel::setTopic(std::string& newTopic) {_topic = newTopic;}
 void Channel::setChannelPassword(std::string password) {_channel_password = password;}
 void Channel::setCapacityLimit(int limit) {
-    std::cout << "limit set to: " << limit << std::endl;
+    // std::cout << "limit set to: " << limit << std::endl;
     _limit = limit;
 }
 bool Channel::clientExist(std::string &clientName) {
@@ -64,12 +64,12 @@ void	Channel::addToKicked(std::string &kicked_name)
 	{
 		if (*it == kicked_name)
 		{
-			std::cout << kicked_name << " is already kicked from the channel " << getName() << std::endl;
+			// std::cout << kicked_name << " is already kicked from the channel " << getName() << std::endl;
 			return ;
 		}
 	}
 	_kicked_users.push_back(kicked_name);
-	std::cout << RED << kicked_name << " is now kicked from the channel " << getName() << RESET << std::endl;
+	// std::cout << RED << kicked_name << " is now kicked from the channel " << getName() << RESET << std::endl;
 }
 
 void    Channel::addInvited(std::string &invited_name)
@@ -79,12 +79,12 @@ void    Channel::addInvited(std::string &invited_name)
     {
         if (*it == invited_name)
         {
-            std::cout << invited_name << " is already invited to the channel " << getName() << std::endl;
+            // std::cout << invited_name << " is already invited to the channel " << getName() << std::endl;
             return ;
         }
     }
     _invited.push_back(invited_name);
-    std::cout << GREEN << invited_name << " is now invited to the channel " << getName() << RESET << std::endl;
+    // std::cout << GREEN << invited_name << " is now invited to the channel " << getName() << RESET << std::endl;
 }
 
 bool    Channel::isInvited(std::string &invited_name)
@@ -106,7 +106,7 @@ bool    Channel::isInvited(std::string &invited_name)
 void Channel::addFirstOperator(std::string operatorName)
 {
     _operators.push_back(operatorName);
-    std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
+    // std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
 }
 
 bool Channel::isOperator(std::string &operatorName)
@@ -131,11 +131,11 @@ void Channel::removeOperator(std::string operatoName){
         if (*it == operatoName)
         {
             _operators.erase(it);
-            std::cout << RED << operatoName << " is no longer an operator in the channel " << getName() << RESET << std::endl;
+            // std::cout << RED << operatoName << " is no longer an operator in the channel " << getName() << RESET << std::endl;
             return ;
         }
     }
-    std::cout << operatoName << " is not an operator in the channel " << getName() << std::endl;
+    // std::cout << operatoName << " is not an operator in the channel " << getName() << std::endl;
 }
 
 void Channel::addOperator(std::string operatorName)
@@ -145,12 +145,12 @@ void Channel::addOperator(std::string operatorName)
     {
         if (*it == operatorName)
         {
-            std::cout << operatorName << " is already an operator in the channel " << getName() << std::endl;
+            // std::cout << operatorName << " is already an operator in the channel " << getName() << std::endl;
             return ;
         }
     }
     _operators.push_back(operatorName);
-    std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
+    // std::cout << GREEN << operatorName << " is now an operator in the channel " << getName() << RESET << std::endl;
 }
 
 /* Modes */
@@ -169,14 +169,14 @@ void Channel::addMode( char mode)
     else if (mode == 't')
         app = "t";
     std::string tmp = "" + app;
-    std::cout << "mode added: " << tmp << std::endl;
+    // std::cout << "mode added: " << tmp << std::endl;
     _mode.push_back(tmp);
 }
 
 bool Channel::validMode( char const mode )
 {
     std::string allmodes = "itkol";
-    std::cout << "heelo" << std::endl;
+    // std::cout << "heelo" << std::endl;
     if (allmodes.find(mode) != std::string::npos)
         return true;
     return false;
@@ -201,10 +201,24 @@ bool Channel::isModeSet( std::string const mode )
     for (it = _mode.begin(); it != _mode.end(); it++)
     {
         if (*it == mode){
-            std::cout << "check mode yes" << std::endl;
+            // std::cout << "check mode yes" << std::endl;
             return true;
         }
     }
-    std::cout << "check mode false" << std::endl;
+    // std::cout << "check mode false" << std::endl;
     return false;
+}
+
+void Channel::removeChannel()
+{
+    _clientList.clear();
+    _kicked_users.clear();
+    _invited.clear();
+    _operators.clear();
+    _mode.clear();
+    _name.clear();
+    _operatorPassword.clear();
+    _topic.clear();
+    _channel_password.clear();
+    _limit = -1;
 }
