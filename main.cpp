@@ -6,7 +6,7 @@
 /*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/09 13:58:53 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/05/15 13:25:53 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/10/06 18:18:36 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@ void sigHandler( int signum ) {
 int main(int ac, const char** av) {
 
     if ( ac != 3 ) {
-
         return 1;
     }
     int port = atoi( av[1] );
@@ -35,11 +34,9 @@ int main(int ac, const char** av) {
 
     int servStatus = 0;
     while ( g_ToBreak && !servStatus ) {
-
-	    signal(SIGINT, sigHandler); /////// reThink about it !!;
-
+	    signal(SIGINT, sigHandler);
         servStatus = irc_serv.multiplex();
     }
-    
+
     return 0;
 }

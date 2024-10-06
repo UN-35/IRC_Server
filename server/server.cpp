@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
+/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/05 17:53:09 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/06 18:16:55 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ server::server( int _port, std::string _pass ) : port( _port ), passwd( _pass ) 
 }
 
 
-//////   SEEEEERV !WoW!
+//////   SEEEEERVER !WoW!
 int server::multiplex() {
     if ( poll( poll_vec.data(), poll_vec.size(), 0 ) < 0 ) {
         std::cerr << "Error: Failed to Connect With Multiple Clients" << std::endl;
@@ -135,16 +135,16 @@ void server::ClientRecv( int clientFileD ) {
         std::cout << "Client [" << Clients[clientFileD].getNickName() << "] Left the CLUUB!" << std::endl;
         close( clientFileD );
         Clients.erase( clientFileD );
-        Clients[clientFileD].setNickName("");
-        Clients[clientFileD].setUserName("");
         Clients[clientFileD].setChanLimit(0);
+        Clients[clientFileD].auth[0] = false;
+        Clients[clientFileD].auth[1] = false;
+        Clients[clientFileD].auth[2] = false;
     }
     if ( buffer[index - 1] != '\n' ) {
         Clients[clientFileD].setBuffer( buffer.data() );
         return ;
     } else
         Clients[clientFileD].setBuffer( buffer.data() );
-    
 
     // get the line from buffer and parse it with deleting /r /n (for numeric replies);
     std::vector<std::string> splitted = splitVec( Clients[clientFileD].getBuffer(), '\n' );
@@ -158,12 +158,11 @@ void server::ClientRecv( int clientFileD ) {
 
         size_t sp = line.find(" ");
 
-
         std::string nick = Clients[clientFileD].getNickName();
         std::string cmd = line.substr( 0, sp );
 
-        // if ( cmd == "CAP" )
-        //     continue;
+        if ( cmd == "CAP" )
+            continue;
 
         if ( Clients[clientFileD].auth[2] == false ) {
             if ( cmd == "PASS" ) {
@@ -174,7 +173,7 @@ void server::ClientRecv( int clientFileD ) {
                 }
                 else
                     Clients[clientFileD].auth[0] = true;
-            } else if (cmd == "NICK" ) {
+            } else if ( cmd == "NICK" ) {
                 if ( Clients[clientFileD].auth[0] == false ) {
                     std::string needpass = "You need to set a Password first.\r\n";
                     send( clientFileD, needpass.c_str(), needpass.size(), 0 );
@@ -190,7 +189,6 @@ void server::ClientRecv( int clientFileD ) {
                 } 
                 else if ( NName[0].at(0) == '#' || NName[0].at(0) == ':' ) {
                     // handleNumReps( clientFileD, 432, NName[0] ); //ERR_ERRONUSENICKNAME
-                    // this 432 error disconnect the client from the server, but it works fine with just return();
                     return ;
                 }
                 else {
@@ -207,6 +205,7 @@ void server::ClientRecv( int clientFileD ) {
                 }
                 std::vector<std::string> username = splitVec( line.substr( sp + 1 ), ' ' );
                 if ( Clients[clientFileD].getUserName().empty() ) {
+                    
                     Clients[clientFileD].setUserName( username[0] );
 
                     std::string rep1 = ":" + hostname + " 001 " + Clients[clientFileD].getNickName() + " :Welcome to IRC server\r\n";
@@ -226,28 +225,20 @@ void server::ClientRecv( int clientFileD ) {
             if ( !Clients[clientFileD].getUserName().empty() && !Clients[clientFileD].getNickName().empty() ) {
                 std::string n = Clients[clientFileD].getNickName();
                 std::string u = Clients[clientFileD].getUserName();
-                // std::string welcome = "\033[1;34m :" + hostname + " 001 " + "" + n + "" + " :Welcome to the IRC Network, " + n + "!" + u + "@" + hostname + "  \r\n";
-                // send( clientFileD, welcome.c_str(), welcome.size(), 0 );
                 std::cout << "Client [" << n << "] Joined the CLUUB!" << std::endl;
-                //
-                //
                 //
                 startChronoBot = time(NULL);
                 //
-                //
             }
         } else {
-            // Clients[clientFileD].setFd( clientFileD );
-            // std::cout << "Client [ " << clientFileD << " ] is connected ---------------!" << std::endl;
-            // std::cout << "Client [ " << Clients[clientFileD].getFd() << " ] is connected (getfd) ---------------!" << std::endl;
-            std::cout << "line = " << line << std::endl;
+            // std::cout << "line = " << line << std::endl;
             if ( Clients[clientFileD].auth[2] == false ) {
                 handleNumReps( clientFileD, 451, line ); // ERR_NOTREGISTERED
                 return ;
             }
             if (cmd == "PRIVMSG") {
                 std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                std::cout << msg[0] << std::endl;
+                // std::cout << msg[0] << std::endl;
                 if ( msg.size() < 2 ) {
                     handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
                 } else {
@@ -300,7 +291,6 @@ void server::ClientRecv( int clientFileD ) {
                 } 
                 else if ( NName[0].at(0) == '#' || NName[0].at(0) == ':' ) {
                     // handleNumReps( clientFileD, 432, NName[0] ); //ERR_ERRONUSENICKNAME
-                    // this 432 error disconnect the client from the server, but it works fine with just return();
                     return ;
                 }
                 else {
@@ -338,545 +328,491 @@ void server::ClientRecv( int clientFileD ) {
                             }
                         }
                     }
-                    std::cout << "Client [ " << Clients[clientFileD].getNickName() << " ] Left the CLUUB!" << std::endl;
                     close( clientFileD );
+                    std::cout << "Client [ " << Clients[clientFileD].getNickName() << " ] Left the CLUUB!" << std::endl;
                     Clients.erase( clientFileD );
-                    Clients[clientFileD].setNickName("");
-                    Clients[clientFileD].setUserName("");
                     Clients[clientFileD].setChanLimit(0);
-                    //
-                    //
-                    //
-                } // JOIN COMMMAND
-                else if ( cmd == "JOIN"){
-                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    if (msg.size() < 1 || msg.size() > 2)
-                        handleNumReps( clientFileD, 505, line ); //ERR_NEEDMOREPARAMS
-                    else {
-                        std::string channel_name;// = msg[0];
-                        std::string nick = Clients[clientFileD].getNickName();
-                        std::vector<std::string> channels_name = splitVec( msg[0], ',');
-                        std::vector<std::string> keys = splitVec( "", ',');
-                        if (msg.size() == 2)
-                            keys = splitVec( msg[1], ',');
-                        // std::cout << "keys.size() = " << keys.size() << std::endl;
-                        // std::cout << "channels_name.size() = " << channels_name.size() << std::endl;
-                        for (size_t i = 0; i < channels_name.size(); i++){
-                            channel_name = channels_name[i];
-                            if ( channel_name[0] != '#' ) {
-                                // send( clientFileD, "HER2\r\n", 6, 0 );
-                                handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                            } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() > 9 ) {
-                                handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
-                            } else if (!keys.empty() && channels_name.size() != keys.size()) {
-                                handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                                break;
-                            }else if (channels_name.size() > 5) {
-                                handleNumReps( clientFileD, 504, channel_name ); //ERR_TOOMANYCHANN
-                                break;
-                            }else if (channel_name.size() > 20) {
-                                handleNumReps( clientFileD, 503, channel_name ); //ERR_CHANNELNAMETOOLONG
-                            
-                            }else if (channel_name == "#0"){
-                                for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++) {
-                                    Channel* channel = &(*it);
-                                    if (channel->clientExist(nick)) {
-                                        std::string chan = channel->getName();
-                                        std::string part = ":" + nick + " PART " + chan + "\r\n";
-                                        std::map <std::string, Client> clients_list = channel->getClientList();
-                                        for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                            send(it->second.getFd(), part.c_str(), part.size(), 0);
-                                        }
-                                        channel->removeClientFromChannel(nick);
-                                        Clients[clientFileD].delJoindChan();
+                    Clients[clientFileD].auth[0] = false;
+                    Clients[clientFileD].auth[1] = false;
+                    Clients[clientFileD].auth[2] = false;
+            } // JOIN COMMMAND
+            else if ( cmd == "JOIN"){
+                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                if (msg.size() < 1 || msg.size() > 2)
+                    handleNumReps( clientFileD, 505, line ); //ERR_NEEDMOREPARAMS
+                else {
+                    std::string channel_name;
+                    std::string nick = Clients[clientFileD].getNickName();
+                    std::vector<std::string> channels_name = splitVec( msg[0], ',');
+                    std::vector<std::string> keys = splitVec( "", ',');
+                    if (msg.size() == 2)
+                        keys = splitVec( msg[1], ',');
+                    for (size_t i = 0; i < channels_name.size(); i++){
+                        channel_name = channels_name[i];
+                        if ( channel_name[0] != '#' ) {
+                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                        } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() > 9 ) {
+                            handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
+                        } else if (!keys.empty() && channels_name.size() != keys.size()) {
+                            handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                            break;
+                        }else if (channels_name.size() > 5) {
+                            handleNumReps( clientFileD, 504, channel_name ); //ERR_TOOMANYCHANN
+                            break;
+                        }else if (channel_name.size() > 20) {
+                            handleNumReps( clientFileD, 503, channel_name ); //ERR_CHANNELNAMETOOLONG
+                        
+                        }else if (channel_name == "#0"){
+                            for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++) {
+                                Channel* channel = &(*it);
+                                if (channel->clientExist(nick)) {
+                                    std::string chan = channel->getName();
+                                    std::string part = ":" + nick + " PART " + chan + "\r\n";
+                                    std::map <std::string, Client> clients_list = channel->getClientList();
+                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                        send(it->second.getFd(), part.c_str(), part.size(), 0);
                                     }
+                                    channel->removeClientFromChannel(nick);
+                                    Clients[clientFileD].delJoindChan();
                                 }
+                            }
+                        }
+                        else {
+                            Channel* channel = searchChannel( channel_name );
+                            if ( channel == NULL) {
+                                Channel newChannel( channel_name );
+                                Channels.push_back( newChannel );
+                                channel = &Channels.back();
+                                Clients[clientFileD].setOperator( true );
+                                channel->addClientToChannel( Clients[clientFileD] );
+                                Clients[clientFileD].addJoindChan();
+                                if (Clients[clientFileD].getOperator() == true) {
+                                    channel->addFirstOperator( nick );
+                                }
+                            }
+                            else if (channel->isModeSet("k") && ( keys.empty() || keys[i] != channel->getChannelPassword()))
+                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            else if (channel->isModeSet("k") == false && !keys[i].empty())
+                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            else if (channel->isModeSet("l") && channel->getCapacityLimit() == channel->getClientList().size()) {
+                                handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
+                            } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
+                                handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
+                            } else if ( channel->clientExist(nick) ){
+                                handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
                             }
                             else {
-                                Channel* channel = searchChannel( channel_name );
-                                if ( channel == NULL) {
-                                    // if (msg.size() != 1)
-                                    //     handleNumReps(clientFileD, 475, channel_name );
-                                    // else {
-                                        Channel newChannel( channel_name );
-                                        Channels.push_back( newChannel );
-                                        channel = &Channels.back();
-                                        Clients[clientFileD].setOperator( true );
-                                        channel->addClientToChannel( Clients[clientFileD] );
-                                        Clients[clientFileD].addJoindChan();
-                                        // std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
-                                        if (Clients[clientFileD].getOperator() == true) {
-                                            channel->addFirstOperator( nick );
-                                        // }
-                                    }
+                                channel->addClientToChannel( Clients[clientFileD] );
+                                Clients[clientFileD].addJoindChan();
+                                std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
+                                if (!channel->getTopic().empty()){
+                                    std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                                    send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
                                 }
-                                else if (channel->isModeSet("k") && ( keys.empty() || keys[i] != channel->getChannelPassword()))
-                                    handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                                else if (channel->isModeSet("k") == false && !keys[i].empty())
-                                    handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                                else if (channel->isModeSet("l") && channel->getCapacityLimit() == channel->getClientList().size()) {
-                                    handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
-                                } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
-                                    handleNumReps( clientFileD, 473, channel_name ); //ERR_INVITEONLYCHAN
-                                // } else if ( channel->isModeSet("k") && channel->getChannelPassword() != msg[1] && msg.size() != 2) { // #TODO: check if the args are more than 4
-                                //     handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                                } else if ( channel->clientExist(nick) ){
-                                    handleNumReps(clientFileD, 443, channel_name ); //ERR_ALREADYONCHANNEL
-                                }
-                                else {
-                                    channel->addClientToChannel( Clients[clientFileD] );
-                                    Clients[clientFileD].addJoindChan();
-                                    std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
-                                    if (!channel->getTopic().empty()){
-                                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
-                                        send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
-                                    }
-                                    std::map <std::string, Client> clients_list = channel->getClientList();
-                                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                        if ( it->first != nick ) {
-                                            send( it->second.getFd(), join.c_str(), join.size(), 0 );
-                                        }
+                                std::map <std::string, Client> clients_list = channel->getClientList();
+                                for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                    if ( it->first != nick ) {
+                                        send( it->second.getFd(), join.c_str(), join.size(), 0 );
                                     }
                                 }
                             }
                         }
                     }
-                }// KICK command 
-                else if (cmd == "KICK"){
-                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string nick = Clients[clientFileD].getNickName();
-                    std::string kick;
-                    if ( msg.size() < 2 ) {
-                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                    } else {
-                        std::string channel_name = msg[0];
-                        Channel* channel = searchChannel( channel_name );
-                        if ( channel == NULL ) {
-                            // send( clientFileD, "HER3\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                        } else if ( channel->clientExist( nick ) == false ) {
-                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                        } else if ( nick != msg[1] ){
-                            if ( channel->isOperator( nick ) == false ) {
-                                handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                }
+            }// KICK command 
+            else if (cmd == "KICK"){
+                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                std::string nick = Clients[clientFileD].getNickName();
+                std::string kick;
+                if ( msg.size() < 2 ) {
+                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                } else {
+                    std::string channel_name = msg[0];
+                    Channel* channel = searchChannel( channel_name );
+                    if ( channel == NULL ) {
+                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                    } else if ( channel->clientExist( nick ) == false ) {
+                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                    } else if ( nick != msg[1] ){
+                        if ( channel->isOperator( nick ) == false ) {
+                            handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                        } else {
+                            std::string kicked = msg[1];
+                            if ( channel->clientExist( kicked ) == false ) {
+                                handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
                             } else {
-                                std::string kicked = msg[1];
-                                if ( channel->clientExist( kicked ) == false ) {
-                                    handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
-                                } else {
-                                    channel->removeClientFromChannel( kicked );
-                                    Clients[clientFileD].delJoindChan();
-                                    std::map <std::string, Client> clients_list = channel->getClientList();
-                                    if ( msg.size() > 2){
-                                        std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
-                                        
-                                    }else {
-                                        kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + "\r\n";
-                                    }
-                                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
-                                        send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
-                                    }
-                                    send( server::searchByNName( kicked ), kick.c_str(), kick.size(), 0 );
+                                channel->removeClientFromChannel( kicked );
+                                Clients[clientFileD].delJoindChan();
+                                std::map <std::string, Client> clients_list = channel->getClientList();
+                                if ( msg.size() > 2){
+                                    std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
+                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
+                                    
+                                }else {
+                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + "\r\n";
                                 }
+                                for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                                    send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
+                                }
+                                send( server::searchByNName( kicked ), kick.c_str(), kick.size(), 0 );
                             }
                         }
                     }
-                } // INVITE command
-                else if (cmd == "INVITE")
-                {
-                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string nick = Clients[clientFileD].getNickName();
-                    std::string invite;
-                    std::string invited;
-                    if ( msg.size() < 2)
-                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                }
+            } // INVITE command
+            else if (cmd == "INVITE")
+            {
+                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                std::string nick = Clients[clientFileD].getNickName();
+                std::string invite;
+                std::string invited;
+                if ( msg.size() < 2)
+                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                else {
+                    std::string channel_name = msg[1];
+                    Channel* channel = searchChannel( channel_name );
+                    invited = msg[0];
+                    if ( channel == NULL ){
+                        // send( clientFileD, "HER4\r\n", 6, 0 );
+                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                    } else if ( channel->clientExist( nick ) == false )
+                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                    else if ( server::searchByNName( invited ) == -1 )
+                        handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
                     else {
-                        std::string channel_name = msg[1];
-                        Channel* channel = searchChannel( channel_name );
-                        invited = msg[0];
-                        if ( channel == NULL ){
-                            // send( clientFileD, "HER4\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                        } else if ( channel->clientExist( nick ) == false )
-                            handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
-                        else if ( server::searchByNName( invited ) == -1 )
-                            handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
-                        else {
-                            channel->addInvited( invited );
-                            invite = ": " + nick + " INVITE " + invited + " " + channel_name + "  \r\n";
-                            send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        channel->addInvited( invited );
+                        invite = ": " + nick + " INVITE " + invited + " " + channel_name + "  \r\n";
+                        send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                    }
+                }
+            } // TOPIC command
+            else if (cmd == "TOPIC") {
+                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
+                std::string topic;
+                std::string channel_name;
+                if (msg.size() < 1)
+                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                else {
+                    channel_name = msg[0];
+                    Channel* channel = searchChannel( channel_name );
+                    if (channel == NULL) {
+                        handleNumReps(clientFileD, 403, channel_name); // ERR_NOSUCHCHANNEL
+                    } else if (!channel->clientExist(nick)) {
+                        handleNumReps(clientFileD, 442, nick); // ERR_NOTONCHANNEL
+                    } else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1) {
+                        handleNumReps(clientFileD, 482, nick); // ERR_CHANOPRIVSNEEDED
+                    } else if (msg.size() > 1) { // The client is setting a new topic
+                        topic = line.substr(sp + 1 + msg[0].length() + 1) + "\r\n";
+                        channel->setTopic(topic);
+                        // Notify the channel about the new topic (RPL_TOPIC)
+                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + topic;
+                        for (std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++) {
+                            send(it->second.getFd(), topicMessage.c_str(), topicMessage.size(), 0);
+                        }
+                    } else if (msg.size() == 1) { // The client is requesting the current topic
+                        if (channel->getTopic().empty()) {
+                            // No topic is set, send RPL_NOTOPIC (331)
+                            std::string noTopicMessage = ":server_name 331 " + nick + " " + channel_name + " :No topic is set\r\n";
+                            send(clientFileD, noTopicMessage.c_str(), noTopicMessage.size(), 0);
+                        } else {
+                            // A topic is set, send RPL_TOPIC (332)
+                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                            send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
                         }
                     }
-                } // TOPIC command
-                else if (cmd == "TOPIC") {
-                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string topic;
-                    std::string channel_name;
-                    if (msg.size() < 1)
-                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                }
+            } // MODE command
+            else if (cmd == "MODE") {
+                std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
+                std::string modes;
+                std::string channel_name;
+                std::string nick = Clients[clientFileD].getNickName();
+                std::string username = Clients[clientFileD].getUserName();
+                std::string message;
+                // std::cout << "msg.size() = " << msg.size() << std::endl;
+                if (msg.size() < 2)
+                    handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                else if (msg[0] == nick ){
+                    // Do nothing ---------------
+                }
+                else {
+                    channel_name = msg[0];
+                    Channel* channel = searchChannel( channel_name );
+                    std::map<std::string, Client> clients_list = channel->getClientList();
+                    modes = msg[1];
+                    if ( channel == NULL ){
+                        handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
+                    }
                     else {
-                        channel_name = msg[0];
-                        Channel* channel = searchChannel( channel_name );
-                        if (channel == NULL) {
-                            handleNumReps(clientFileD, 403, channel_name); // ERR_NOSUCHCHANNEL
-                        } else if (!channel->clientExist(nick)) {
-                            handleNumReps(clientFileD, 442, nick); // ERR_NOTONCHANNEL
-                        } else if (channel->isModeSet("t") && !channel->isOperator(nick) && msg.size() > 1) {
-                            handleNumReps(clientFileD, 482, nick); // ERR_CHANOPRIVSNEEDED
-                        } else if (msg.size() > 1) { // The client is setting a new topic
-                            topic = line.substr(sp + 1 + msg[0].length() + 1) + "\r\n";
-                            channel->setTopic(topic);
-
-                            // Notify the channel about the new topic (RPL_TOPIC)
-                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + topic;
-                            for (std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++) {
-                                send(it->second.getFd(), topicMessage.c_str(), topicMessage.size(), 0);
+                        if (modes.length() != 2)
+                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                        else if (modes[1] != 'i' && modes[1] != 't' && msg.size() == 2 && modes != "-l")
+                            handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
+                        else if (modes[0] != '+' && modes[0] != '-')
+                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                        else if (channel->validMode(modes[1]) == false)
+                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
+                        else if (channel->isOperator(nick) == false)
+                            handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
+                        else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
+                        {
+                            channel->addMode('i');
+                            message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +i\r\n";
+                            for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                send(it->second.getFd(), message.c_str(), message.size(), 0);
                             }
-
-                        } else if (msg.size() == 1) { // The client is requesting the current topic
-                            if (channel->getTopic().empty()) {
-                                // No topic is set, send RPL_NOTOPIC (331)
-                                std::string noTopicMessage = ":server_name 331 " + nick + " " + channel_name + " :No topic is set\r\n";
-                                send(clientFileD, noTopicMessage.c_str(), noTopicMessage.size(), 0);
-                            } else {
-                                // A topic is set, send RPL_TOPIC (332)
-                                std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
-                                send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
-
-                                // Optionally, send the topic setter information (RPL_TOPICWHOTIME 333)
-                                // std::string topicInfoMessage = ":server_name 333 " + nick + " " + channel_name + " " + channel->getTopicSetter() + " " + std::to_string(channel->getTopicTimestamp()) + "\r\n";
-                                // send(clientFileD, topicInfoMessage.c_str(), topicInfoMessage.size(), 0);
+                        }
+                        else if (modes[0] == '-' && modes[1] == 'i' && channel->isModeSet("i") == true)
+                        {
+                            channel->removeMode("i");
+                            message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -i\r\n";
+                            for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                send(it->second.getFd(), message.c_str(), message.size(), 0);
                             }
                         }
-                    }
-                } // MODE command
-                else if (cmd == "MODE") {
-                    std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ');
-                    std::string modes;
-                    std::string channel_name;
-                    std::string nick = Clients[clientFileD].getNickName();
-                    std::string username = Clients[clientFileD].getUserName();
-                    std::string message;
-                    std::cout << "msg.size() = " << msg.size() << std::endl;
-                    if (msg.size() < 2)
-                        handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                    else if (msg[0] == nick ){
-                        // Do nothing ---------------
-                    }
-                    else {
-                        channel_name = msg[0];
-                        Channel* channel = searchChannel( channel_name );
-                        std::map<std::string, Client> clients_list = channel->getClientList();
-                        modes = msg[1];
-                        if ( channel == NULL ){
-                            // send( clientFileD, "HER6\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
-                        }
-                        else {
-                            if (modes.length() != 2)
-                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                            else if (modes[1] != 'i' && modes[1] != 't' && msg.size() == 2 && modes != "-l")
-                                handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                            else if (modes[0] != '+' && modes[0] != '-')
-                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                            else if (channel->validMode(modes[1]) == false)
-                                handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                            else if (channel->isOperator(nick) == false)
-                                handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
-                            else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
-                            {
-                                channel->addMode('i');
-                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +i\r\n";
+                        else if (modes[0] == '+' && modes[1] == 'o')
+                        {
+                            if (channel->clientExist(msg[2]) == false)
+                                handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                            else if (channel->isOperator(msg[2]) == true)
+                                handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                            else {
+                                channel->addOperator(msg[2]);
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +o " + msg[2] + "\r\n";
                                 for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
                                     send(it->second.getFd(), message.c_str(), message.size(), 0);
                                 }
                             }
-                            else if (modes[0] == '-' && modes[1] == 'i' && channel->isModeSet("i") == true)
-                            {
-                                channel->removeMode("i");
-                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -i\r\n";
+                        }
+                        else if (modes[0] == '-' && modes[1] == 'o')
+                        {
+                            if (channel->clientExist(msg[2]) == false)
+                                handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
+                            else if (channel->isOperator(msg[2]) == false)
+                                handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                            else{
+                                channel->removeOperator(msg[2]);
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -o " + msg[2] + "\r\n";
                                 for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
                                     send(it->second.getFd(), message.c_str(), message.size(), 0);
                                 }
                             }
-                            else if (modes[0] == '+' && modes[1] == 'o')
-                            {
-                                if (channel->clientExist(msg[2]) == false)
-                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
-                                else if (channel->isOperator(msg[2]) == true)
-                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
-                                else {
-                                    channel->addOperator(msg[2]);
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +o " + msg[2] + "\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '-' && modes[1] == 'o')
-                            {
-                                if (channel->clientExist(msg[2]) == false)
-                                    handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
-                                else if (channel->isOperator(msg[2]) == false)
-                                    handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
-                                else{
-                                    channel->removeOperator(msg[2]);
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -o " + msg[2] + "\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '+' && modes[1] == 'k')
-                            {
-                                if (msg.size() < 3)
-                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                                else{
-                                    channel->addMode('k');
-                                    channel->setChannelPassword(msg[2]);
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +k " + msg[2] + "\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '-' && modes[1] == 'k')
-                            {
-                                if (msg.size() < 3)
-                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                                else if (channel->getChannelPassword() != msg[2])
-                                    handleNumReps(clientFileD, 475, channel_name); //ERR_BADCHANNELKEY
-                                else{
-                                    channel->removeMode("k");
-                                    channel->setChannelPassword("");
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -k\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '+' && modes[1] == 'l')
-                            {
-                                if (msg.size() < 3)
-                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                                else if (channel->isModeSet("l") == true)
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else if (atoi(msg[2].c_str()) <= 0 )
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else if ((unsigned long)atoi(msg[2].c_str()) < channel->getClientList().size())
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else{
-                                    channel->addMode('l');
-                                    channel->_strLimit = msg[2];
-                                    channel->setCapacityLimit(atoi(msg[2].c_str()));
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +l " + msg[2] + "\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '-' && modes[1] == 'l')
-                            {
-                                if (msg.size() < 2)
-                                    handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
-                                else if (channel->isModeSet("l") == false)
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else{
-                                    channel->removeMode("l");
-                                    channel->setCapacityLimit(-1);
-                                    channel->_strLimit = "";
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -l\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '+' && modes [1] == 't')
-                            {
-                                if (channel->isModeSet("t") == true)
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else{
-                                    channel->addMode('t');
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +t\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else if (modes[0] == '-' && modes [1] == 't')
-                            {
-                                if (channel->isModeSet("t") == false)
-                                    handleNumReps(clientFileD, 502, line); //ERR_KEYSET
-                                else{
-                                    channel->removeMode("t");
-                                    message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -t\r\n";
-                                    for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
-                                        send(it->second.getFd(), message.c_str(), message.size(), 0);
-                                    }
-                                }
-                            }
-                            else
-                                handleNumReps(clientFileD, 501, line); //ERR_UMODEUNKNOWNFLAG
                         }
+                        else if (modes[0] == '+' && modes[1] == 'k')
+                        {
+                            if (msg.size() < 3)
+                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                            else{
+                                channel->addMode('k');
+                                channel->setChannelPassword(msg[2]);
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +k " + msg[2] + "\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else if (modes[0] == '-' && modes[1] == 'k')
+                        {
+                            if (msg.size() < 3)
+                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                            else if (channel->getChannelPassword() != msg[2])
+                                handleNumReps(clientFileD, 475, channel_name); //ERR_BADCHANNELKEY
+                            else{
+                                channel->removeMode("k");
+                                channel->setChannelPassword("");
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -k\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else if (modes[0] == '+' && modes[1] == 'l')
+                        {
+                            if (msg.size() < 3)
+                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                            else if (channel->isModeSet("l") == true)
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else if (atoi(msg[2].c_str()) <= 0 )
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else if ((unsigned long)atoi(msg[2].c_str()) < channel->getClientList().size())
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else{
+                                channel->addMode('l');
+                                channel->_strLimit = msg[2];
+                                channel->setCapacityLimit(atoi(msg[2].c_str()));
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +l " + msg[2] + "\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else if (modes[0] == '-' && modes[1] == 'l')
+                        {
+                            if (msg.size() < 2)
+                                handleNumReps(clientFileD, 461, line); //ERR_NEEDMOREPARAMS
+                            else if (channel->isModeSet("l") == false)
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else{
+                                channel->removeMode("l");
+                                channel->setCapacityLimit(-1);
+                                channel->_strLimit = "";
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -l\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else if (modes[0] == '+' && modes [1] == 't')
+                        {
+                            if (channel->isModeSet("t") == true)
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else{
+                                channel->addMode('t');
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +t\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else if (modes[0] == '-' && modes [1] == 't')
+                        {
+                            if (channel->isModeSet("t") == false)
+                                handleNumReps(clientFileD, 502, line); //ERR_KEYSET
+                            else{
+                                channel->removeMode("t");
+                                message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " -t\r\n";
+                                for (std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++) {
+                                    send(it->second.getFd(), message.c_str(), message.size(), 0);
+                                }
+                            }
+                        }
+                        else
+                            handleNumReps(clientFileD, 501, line); //ERR_UMODEUNKNOWNFLAG
                     }
-                } else if (cmd == "/EMET"){
-                    std::string emet_help = " Usage: /EMET [OPTION] [ARGUMENT]\n"
-                        " Options:\n"
-                        "   -h, --help\t\tDisplay this help and exit\n"
-                        "   -c, --channels list\t\tList all channels available\n"
-                        "   -u, --users list\t\tList all users connected\n"
-                        "   -cu, --list-users [CHANNEL]\t\tList all users in a specific channel\n"
-                        "   -cm, --channel-mode [CHANNEL]\t\tList all modes of a specific channel\n"
-                        "   -i, --invited \t\tAll channels you are invited to\r\n";
-                    std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ' );
-                    std::string msg;
-                    if (option[0] == "-h" && option.size() < 2){
-                        send( clientFileD, emet_help.c_str(), emet_help.size(), 0 );
-                    } else if (option[0] == "-c" && option.size() < 2) {
-                        msg = "Channels Available: \r\n";
+                }
+            } else if ( cmd == "BOT" ) {
+                std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ');
+                std::string help = " Usage: BOT [OPTION] [ARGUMENT]\n"
+                    " Options:\n"
+                    "   -h, --help Display this help and exit\n"
+                    "   -c, --channels list List all channels available\n"
+                    "   -cu, --list-users [CHANNEL] List all users in a specific channel\n"
+                    "   -cm, --channel-mode [CHANNEL] List all modes of a specific channel\n"
+                    "   -i, --invited All channels you are invited to\r\n";
+                std::string msg;
+                if ( (option[0] == "--help" || option[0] == "-h") && option.size() < 2 ) {
+                    send( clientFileD, help.c_str(), help.size(), 0 );
+                } else if (option[0] == "-c" && option.size() < 2) {
+                    msg = "Channels Available: \r\n";
+                    send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
+                        msg = "- " + it->getName() + "\r\n";
                         send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
+                    }
+                } else if (option[0] == "-cu" && option.size() == 2) {
+                    Channel* channel = searchChannel( option[1] );
+                    if (channel == NULL) {
+                        handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
+                    } else if (channel->clientExist(nick) == false){
+                        msg = "(Permession denied!)\n"
+                            "You are not in the channel\r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    }else {
+                        std::map<std::string, Client> clients = channel->getClientList();
+                        msg = ""+ option[1] + " Users: \r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        for (std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++){
+                            msg = "- " + it->first + "\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }
+                    }
+                } else if (option[0] == "-cm" && option.size() == 2) {
+                    Channel* channel = searchChannel( option[1] );
+                    msg = option[1] + " operators are [ ";
+                    for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
+                        msg += *it + " ";
+                    }
+                    msg += "]\r\n";
+                    send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    if (channel == NULL) {
+                        handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
+                    } else if (channel->clientExist(nick) == false){
+                        msg = "(Permession denied!)\n"
+                            "You are not in the channel\r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    } else {
+                        msg = ""+ option[1] + " Modes: \r\n";
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        msg = "- ";
+                        if (channel->isModeSet("i")){
+                            msg += "- Mode (i) : Invite Only\r\n";
+                        } if (channel->isModeSet("t")){
+                            msg += "- Mode (t) : Topic Set\r\n";
+                        } if (channel->isModeSet("o"))
+                        {
+                            msg += "- Mode (o) : Operators [";
+                            for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
+                                msg += *it + " ";
+                            }
+                            msg += "]\r\n";
+                        } if (channel->isModeSet("k")) {
+                            msg += "- Mode (k) : Password Set\r\n";
+                        } if (channel->isModeSet("l")) {
+                            msg += "- Mode (l) : Capacity Limit (" + channel->_strLimit + ")\r\n";
+                        }
+                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    }
+                } else if (option[0] == "-i" && option.size() < 2) {
+                    msg = "Channels You are Invited to: \r\n";
+                    send( clientFileD, msg.c_str(), msg.size(), 0 );
+                    bool check = false;
+                    for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
+                        if (it->isInvited(nick)){
+                            check = true;
                             msg = "- " + it->getName() + "\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
-                    // } else if (option[0] == "-u" && option.size() < 2) {
-                    //     msg = "Users Connected: \r\n";
-                    //     send( clientFileD, msg.c_str(), msg.size(), 0 );
-                    //     for (std::map<int, Client>::iterator it = Clients.begin(); it != Clients.end(); it++){
-                    //         if ( it->first. ){
-                    //             msg = "- " + it->second.getNickName() + "\r\n";
-                    //             send( clientFileD, msg.c_str(), msg.size(), 0 );
-                    //         }
-                    //     }
-                    } else if (option[0] == "-cu" && option.size() == 2) {
-                        Channel* channel = searchChannel( option[1] );
-                        if (channel == NULL) {
-                            // send( clientFileD, "HER7\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
-                        } else if (channel->clientExist(nick) == false){
-                            msg = "(Permession denied!)\n"
-                                "You are not in the channel\r\n";
-                            send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        }else {
-                            std::map<std::string, Client> clients = channel->getClientList();
-                            msg = ""+ option[1] + " Users: \r\n";
-                            send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            for (std::map<std::string, Client>::iterator it = clients.begin(); it != clients.end(); it++){
-                                msg = "- " + it->first + "\r\n";
-                                send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            }
-                        }
-                    } else if (option[0] == "-cm" && option.size() == 2) {
-                        Channel* channel = searchChannel( option[1] );
-                        std::string msg;
-                         for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
-                                    msg += *it + " ";
-                                }
-                        msg += "]\r\n";
-                        send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        if (channel == NULL) {
-                            // send( clientFileD, "HER8\r\n", 6, 0 );
-                            handleNumReps( clientFileD, 403, option[1] ); //ERR_NOSUCHCHANNEL
-                        } else if (channel->clientExist(nick) == false){
-                            msg = "(Permession denied!)\n"
-                                "You are not in the channel\r\n";
-                            send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        }else {
-                            msg = ""+ option[1] + " Modes: \r\n";
-                            send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            msg = "- ";
-                            if (channel->isModeSet("i")){
-                                msg += "- Mode (i) : Invite Only\r\n";
-                            } if (channel->isModeSet("t")){
-                                msg += "- Mode (t) : Topic Set\r\n";
-                            } if (channel->isModeSet("o"))
-                            {
-                                msg += "- Mode (o) : Operators [";
-                                for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
-                                    msg += *it + " ";
-                                }
-                                msg += "]\r\n";
-                            } if (channel->isModeSet("k")) {
-                                msg += "- Mode (k) : Password Set\r\n";
-                            } if (channel->isModeSet("l")) {
-                                msg += "- Mode (l) : Capacity Limit (" + channel->_strLimit + ")\r\n";
-                            }
-                            msg += "\r\n";
+                        if (!check){
+                            msg = "- No Channels Invited to\r\n";
                             send( clientFileD, msg.c_str(), msg.size(), 0 );
                         }
-                    } else if (option[0] == "-i" && option.size() < 2) {
-                        msg = "Channels You are Invited to: \r\n";
-                        send( clientFileD, msg.c_str(), msg.size(), 0 );
-                        bool check = false;
-                        for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
-                            if (it->isInvited(nick)){
-                                check = true;
-                                msg = "- " + it->getName() + "\r\n";
-                                send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            }
-                            if (!check){
-                                msg = "- No Channels Invited to\r\n";
-                                send( clientFileD, msg.c_str(), msg.size(), 0 );
-                            }
-                        }
-                        
-                    } else {
-                        send( clientFileD, emet_help.c_str(), emet_help.size(), 0 );
-                    }
-                }
-                else if ( cmd == "BOT" ) {
-                    // std::string bot = "I am Thaaa BOT\r\n";
-                    // send( clientFileD, bot.c_str(), bot.size(), 0);
-                    std::vector<std::string> option = splitVec( line.substr( sp + 1 ), ' ');
-
-                    if ( option[0] == "--help" || option[0] == "-h" ) {
-                        std::string help = "NAME :\r\n    BOT\r\nSYNOPSIS :\r\n    BOT [Option]\r\nVALID OPTIONS :\r\n    -h, --help : shows informations about the Bot.\r\n    -d : shows the duration you have been online on the our IRCserver\r\n    -cc : this is the channel counter, it tells you how many channels you are currenly a member of\r\n";
-                        send( clientFileD, help.c_str(), help.size(), 0 );
-                    } else if ( option[0] == "-d" ) {
-                        // Record the end time
-                        time_t endChrono = time(NULL);
-                    
-                        // Calculate the duration
-                        double duration = difftime(endChrono, startChronoBot);
-                        int minutes = static_cast<int>(duration) / 60;
-                        int remainingSeconds = static_cast<int>(duration) % 60;
-                        
-                        std::ostringstream oss;
-                        if (minutes > 0) {
-                            oss << minutes << "min";
-                        }
-                        if (remainingSeconds > 0 || minutes == 0) {
-                            if (minutes > 0) oss << " ";
-                            oss << remainingSeconds << "s";
-                        }
-        
-                        std::string ConnectionChrono =  "You have been online on the server for : " + oss.str() + " now.\r\n";
-                        send( clientFileD, ConnectionChrono.c_str(), ConnectionChrono.size(), 0 );
-                    }
-                    else if ( option[0] == "-cc" ) { //for channel counter
-                        int count = Clients[clientFileD].getChanLimit();
-                        std::ostringstream oss_count;
-                        oss_count << count;
-                        std::string counter;
-                        if ( count <= 1 )
-                            counter = "You are currently a member in " + oss_count.str() + " channel\r\n";
-                        else
-                            counter = "You are currently a member in " + oss_count.str() + " channels\r\n";
-                        send( clientFileD, counter.c_str(), counter.size(), 0 );
-                        
                     }
                     
-                    else {
-                        std::string noOption = "Try BOT -h/--help to show all the valid options IRCbot can do.\r\n";
-                        send( clientFileD, noOption.c_str(), noOption.size(), 0 );
-                        return ;
+                } else if ( option[0] == "-d" ) {
+                    // Record the end time
+                    time_t endChrono = time(NULL);
+                
+                    // Calculate the duration
+                    double duration = difftime(endChrono, startChronoBot);
+                    int minutes = static_cast<int>(duration) / 60;
+                    int remainingSeconds = static_cast<int>(duration) % 60;
+                    
+                    std::ostringstream oss;
+                    if (minutes > 0) {
+                        oss << minutes << "min";
                     }
+                    if (remainingSeconds > 0 || minutes == 0) {
+                        if (minutes > 0) oss << " ";
+                        oss << remainingSeconds << "s";
+                    }
+                    std::string ConnectionChrono =  "You have been online on the server for : " + oss.str() + " now.\r\n";
+                    send( clientFileD, ConnectionChrono.c_str(), ConnectionChrono.size(), 0 );
+                } else if ( option[0] == "-cc" ) { //for channel counter
+                    int count = Clients[clientFileD].getChanLimit();
+                    std::ostringstream oss_count;
+                    oss_count << count;
+                    std::string counter;
+                    if ( count <= 1 )
+                        counter = "You are currently a member in " + oss_count.str() + " channel\r\n";
+                    else
+                        counter = "You are currently a member in " + oss_count.str() + " channels\r\n";
+                    send( clientFileD, counter.c_str(), counter.size(), 0 );
+                    
                 }
-                // else {
-                //     std::string msg = "Invalid Command!\r\n";
-                //     send( clientFileD, msg.c_str(), msg.size(), 0 );
-                // }
+                else {
+                    send( clientFileD, help.c_str(), help.size(), 0 );
+                }
+            }
         }
     }
 }

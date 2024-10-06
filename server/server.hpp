@@ -6,7 +6,7 @@
 /*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:17:38 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/08/28 22:59:58 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/10/06 18:17:37 by yoelansa         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,7 +50,7 @@ class server {
     public:
         server( int _port, std::string _pass );
     
-    // core funcs
+    // server core funcs
         int multiplex();
         void newUser();
         void ClientRecv( int clientFileD );
