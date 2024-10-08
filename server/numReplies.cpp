@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/17 15:57:39 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/09/12 23:24:45 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/08 23:35:33 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,7 +53,6 @@ void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
 
     std::string nickname = Clients[cl_fd].getNickName();
 
-
     if ( replyCode == 432 ) // ERR_ERRONEUSNICKNAME
         err = ":" + hostname + " 432 " + nickname + errMsg[replyCode];
     else if ( replyCode == 401 ) // ERR_NOSUCHNICK
@@ -95,7 +94,7 @@ void server::handleNumReps( int cl_fd, int replyCode, std::string cmd ) {
     else if ( replyCode == 481 ) // ERR_NOPRIVILEGES
         err = ":" + hostname + " 481 " + nickname + errMsg[replyCode];
     else if ( replyCode == 482 ) // ERR_CHANOPRIVSNEEDED
-        err = ":" + hostname + " 482 " + nickname + errMsg[replyCode];
+        err = ":" + hostname + " 482 " + nickname + cmd + errMsg[replyCode];
     else if ( replyCode == 441 )
         err = ":" + hostname + " 441 " + nickname + errMsg[replyCode];
     else if ( replyCode == 501 ) // ERR_UMODEUNKNOWNFLAG

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/06 18:16:55 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/10/08 23:13:05 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -255,7 +255,7 @@ void server::ClientRecv( int clientFileD ) {
                             handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
                         }
                         else {
-                            std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " :" + message + "\r\n";
+                            std::string msgToSend = ":" + nick + " PRIVMSG " + channel_name + " " + message + "\r\n";
                             std::map <std::string, Client> clients_list = channel->getClientList();
                             for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                 if ( it->first != nick ) {
@@ -269,7 +269,7 @@ void server::ClientRecv( int clientFileD ) {
                         if ( fd == -1 ) {
                             handleNumReps( clientFileD, 401, msg[0] ); //ERR_NOSUCHNICK
                         } else {
-                            std::string msgToSend = ":" + nick + " PRIVMSG " + msg[0] + " :" + message + "\r\n";
+                            std::string msgToSend = ":" + nick + " PRIVMSG " + msg[0] + " " + message + "\r\n";
                             send( fd, msgToSend.c_str(), msgToSend.size(), 0 );
                         }
                     }
@@ -406,7 +406,7 @@ void server::ClientRecv( int clientFileD ) {
                                 Clients[clientFileD].addJoindChan();
                                 std::string join = ":" + nick + " JOIN " + channel_name + "\r\n";
                                 if (!channel->getTopic().empty()){
-                                    std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                                    std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " " + channel->getTopic() + "\r\n";
                                     send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
                                 }
                                 std::map <std::string, Client> clients_list = channel->getClientList();
@@ -446,10 +446,10 @@ void server::ClientRecv( int clientFileD ) {
                                 std::map <std::string, Client> clients_list = channel->getClientList();
                                 if ( msg.size() > 2){
                                     std::string reason = line.substr( sp + 1 + msg[0].length() + msg[1].length() + 2 );
-                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + reason + "\r\n";
+                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " " + reason + "\r\n";
                                     
                                 }else {
-                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " :" + "\r\n";
+                                    kick = ":" + nick + " KICK " + channel_name + " " + kicked + " " + "\r\n";
                                 }
                                 for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                     send( it->second.getFd(), kick.c_str(), kick.size(), 0 );
@@ -505,7 +505,7 @@ void server::ClientRecv( int clientFileD ) {
                         topic = line.substr(sp + 1 + msg[0].length() + 1) + "\r\n";
                         channel->setTopic(topic);
                         // Notify the channel about the new topic (RPL_TOPIC)
-                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + topic;
+                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " " + topic;
                         for (std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++) {
                             send(it->second.getFd(), topicMessage.c_str(), topicMessage.size(), 0);
                         }
@@ -516,7 +516,7 @@ void server::ClientRecv( int clientFileD ) {
                             send(clientFileD, noTopicMessage.c_str(), noTopicMessage.size(), 0);
                         } else {
                             // A topic is set, send RPL_TOPIC (332)
-                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " :" + channel->getTopic() + "\r\n";
+                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " " + channel->getTopic() + "\r\n";
                             send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
                         }
                     }
@@ -552,8 +552,9 @@ void server::ClientRecv( int clientFileD ) {
                             handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
                         else if (channel->validMode(modes[1]) == false)
                             handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                        else if (channel->isOperator(nick) == false)
-                            handleNumReps( clientFileD, 482, line ); //ERR_CHANOPRIVSNEEDED
+                        else if (channel->isOperator(nick) == false) {
+                            handleNumReps( clientFileD, 482, channel_name ); //ERR_CHANOPRIVSNEEDED
+                        }
                         else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
                         {
                             channel->addMode('i');
