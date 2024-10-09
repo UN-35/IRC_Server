@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: yoelansa <yoelansa@student.42.fr>          +#+  +:+       +#+        */
+/*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/09 13:58:53 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/06 18:18:36 by yoelansa         ###   ########.fr       */
+/*   Updated: 2024/10/09 18:05:51 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,12 +29,14 @@ int main(int ac, const char** av) {
 
     g_ToBreak = 1;
     signal(SIGINT, sigHandler);
+    signal(SIGQUIT, sigHandler);
 
     server irc_serv( port, passwd );
 
     int servStatus = 0;
     while ( g_ToBreak && !servStatus ) {
 	    signal(SIGINT, sigHandler);
+        signal(SIGQUIT, sigHandler);
         servStatus = irc_serv.multiplex();
     }
 

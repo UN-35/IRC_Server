@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/11 21:23:34 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/08 23:13:05 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/09 19:03:44 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,13 +34,15 @@ server::server( int _port, std::string _pass ) : port( _port ), passwd( _pass ) 
     sock_fd = socket( AF_INET, SOCK_STREAM, 0 ); //Socket creation.
     if ( sock_fd < 0 ) {
         std::cerr << "Error: Failed to Create Socket!!" << std::endl;
+        close( sock_fd );
+        exit( EXIT_FAILURE );
     }
 
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl( INADDR_ANY );
     server_addr.sin_port = htons( port );
 
-    int optname;
+    int optname = 1;
     if ( setsockopt( sock_fd, SOL_SOCKET, SO_REUSEADDR, &optname, sizeof( optname ) ) < 0 ) {
         std::cerr << "Error: Failed to ReUse the address!" << std::endl;
         close( sock_fd );
@@ -127,8 +129,15 @@ void server::ClientRecv( int clientFileD ) {
             Channel* channel = &(*it);
             if ( channel->clientExist( nick ) ) {
                 channel->removeClientFromChannel( nick );
-                for ( std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++ ) {
-                    send( it->second.getFd(), quit.c_str(), quit.size(), 0 );
+                std::map <std::string, Client> clients_list = channel->getClientList();
+                if (clients_list.size() == 0)
+                {
+                    channel->removeChannel();
+                    // Channels.erase(it);
+                } else {
+                    for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
+                        send( it->second.getFd(), quit.c_str(), quit.size(), 0 );
+                    }
                 }
             }
         }
@@ -295,7 +304,7 @@ void server::ClientRecv( int clientFileD ) {
                 }
                 else {
                     Clients[clientFileD].setNickName( NName[0] );
-                    std::string rep = ":" + nick + "!" + Clients[clientFileD].getUserName() + "@localhost NICK " +  Clients[clientFileD].getNickName() + "\r\n";
+                    std::string rep = ":" + nick + "!" + Clients[clientFileD].getUserName() + "@"+ hostname + " NICK " +  Clients[clientFileD].getNickName() + "\r\n";
                     nick = Clients[clientFileD].getNickName();
                     send( clientFileD, rep.c_str(), rep.size(), 0 );
                     Clients[clientFileD].auth[1] = true;
@@ -320,9 +329,8 @@ void server::ClientRecv( int clientFileD ) {
                             if (clients_list.size() == 0)
                             {
                                 channel->removeChannel();
-                                // Channels.erase(it);
                             } else {
-                                for ( std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++ ) {
+                                for ( std::map<std::string, Client>::iterator it = clients_list.begin(); it != clients_list.end(); it++ ) {
                                     send( it->second.getFd(), quit.c_str(), quit.size(), 0 );
                                 }
                             }
@@ -344,7 +352,9 @@ void server::ClientRecv( int clientFileD ) {
                     std::string channel_name;
                     std::string nick = Clients[clientFileD].getNickName();
                     std::vector<std::string> channels_name = splitVec( msg[0], ',');
-                    std::vector<std::string> keys = splitVec( "", ',');
+                    std::vector<std::string> keys;
+                    for (size_t i = 0; channels_name.size() > i ; i++)
+                        keys.push_back("");
                     if (msg.size() == 2)
                         keys = splitVec( msg[1], ',');
                     for (size_t i = 0; i < channels_name.size(); i++){
@@ -353,9 +363,6 @@ void server::ClientRecv( int clientFileD ) {
                             handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                         } else if ( channel_name[0] == '#' && Clients[clientFileD].getChanLimit() > 9 ) {
                             handleNumReps( clientFileD, 405, channel_name ); //ERR_TOOMANYCHANNELS
-                        } else if (!keys.empty() && channels_name.size() != keys.size()) {
-                            handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
-                            break;
                         }else if (channels_name.size() > 5) {
                             handleNumReps( clientFileD, 504, channel_name ); //ERR_TOOMANYCHANN
                             break;
@@ -383,17 +390,17 @@ void server::ClientRecv( int clientFileD ) {
                                 Channel newChannel( channel_name );
                                 Channels.push_back( newChannel );
                                 channel = &Channels.back();
-                                Clients[clientFileD].setOperator( true );
+                                // Clients[clientFileD].setOperator( true );
                                 channel->addClientToChannel( Clients[clientFileD] );
                                 Clients[clientFileD].addJoindChan();
-                                if (Clients[clientFileD].getOperator() == true) {
-                                    channel->addFirstOperator( nick );
-                                }
+                                // if (Clients[clientFileD].getOperator() == true) {
+                                channel->addOperator( nick );
+                                // }
                             }
-                            else if (channel->isModeSet("k") && ( keys.empty() || keys[i] != channel->getChannelPassword()))
+                            else if (channel->isModeSet("k") && keys.at(i) != channel->getChannelPassword())
                                 handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
-                            else if (channel->isModeSet("k") == false && !keys[i].empty())
-                                handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
+                            // else if (channel->isModeSet("k") == false && !keys[i].empty())
+                            //     handleNumReps( clientFileD, 475, channel_name ); //ERR_BADCHANNELKEY
                             else if (channel->isModeSet("l") && channel->getCapacityLimit() == channel->getClientList().size()) {
                                 handleNumReps( clientFileD, 471, channel_name ); //ERR_CHANNELISFULL
                             } else if ( channel->isModeSet("i") && channel->isInvited( nick ) == false ) {
@@ -441,6 +448,8 @@ void server::ClientRecv( int clientFileD ) {
                             if ( channel->clientExist( kicked ) == false ) {
                                 handleNumReps( clientFileD, 441, kicked ); //ERR_USERNOTINCHANNEL
                             } else {
+                                if ( channel->isOperator( kicked ) )
+                                    channel->removeOperator( kicked );
                                 channel->removeClientFromChannel( kicked );
                                 Clients[clientFileD].delJoindChan();
                                 std::map <std::string, Client> clients_list = channel->getClientList();
@@ -464,7 +473,7 @@ void server::ClientRecv( int clientFileD ) {
             {
                 std::vector<std::string> msg = splitVec( line.substr( sp + 1 ), ' ' );
                 std::string nick = Clients[clientFileD].getNickName();
-                std::string invite;
+                std::string inviteReply;
                 std::string invited;
                 if ( msg.size() < 2)
                     handleNumReps( clientFileD, 461, line ); //ERR_NEEDMOREPARAMS
@@ -477,12 +486,16 @@ void server::ClientRecv( int clientFileD ) {
                         handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                     } else if ( channel->clientExist( nick ) == false )
                         handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                    else if ( channel->clientExist( invited ) )
+                        handleNumReps( clientFileD, 443, invited ); //ERR_ALREADYONCHANNEL
                     else if ( server::searchByNName( invited ) == -1 )
                         handleNumReps( clientFileD, 401, invited ); //ERR_NOSUCHNICK
+                    else if ( channel->isModeSet("i") && channel->isOperator(nick) == false )
+                        handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
                     else {
                         channel->addInvited( invited );
-                        invite = ": " + nick + " INVITE " + invited + " " + channel_name + "  \r\n";
-                        send( server::searchByNName( invited ), invite.c_str(), invite.size(), 0 );
+                        inviteReply = ":" + nick + " INVITE " + invited + " :" + channel_name + "\r\n";
+                        send( server::searchByNName( invited ), inviteReply.c_str(), inviteReply.size(), 0 );
                     }
                 }
             } // TOPIC command
@@ -504,19 +517,16 @@ void server::ClientRecv( int clientFileD ) {
                     } else if (msg.size() > 1) { // The client is setting a new topic
                         topic = line.substr(sp + 1 + msg[0].length() + 1) + "\r\n";
                         channel->setTopic(topic);
-                        // Notify the channel about the new topic (RPL_TOPIC)
-                        std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " " + topic;
+                        std::string topicMessage = ":"+ hostname + " 332 " + nick + " " + channel_name + " " + topic;
                         for (std::map<std::string, Client>::iterator it = channel->getClientList().begin(); it != channel->getClientList().end(); it++) {
                             send(it->second.getFd(), topicMessage.c_str(), topicMessage.size(), 0);
                         }
                     } else if (msg.size() == 1) { // The client is requesting the current topic
                         if (channel->getTopic().empty()) {
-                            // No topic is set, send RPL_NOTOPIC (331)
-                            std::string noTopicMessage = ":server_name 331 " + nick + " " + channel_name + " :No topic is set\r\n";
+                            std::string noTopicMessage = ":" + hostname + " 331 " + nick + " " + channel_name + " :No topic is set\r\n";
                             send(clientFileD, noTopicMessage.c_str(), noTopicMessage.size(), 0);
                         } else {
-                            // A topic is set, send RPL_TOPIC (332)
-                            std::string topicMessage = ":server_name 332 " + nick + " " + channel_name + " " + channel->getTopic() + "\r\n";
+                            std::string topicMessage = ":" + hostname + " 332 " + nick + " " + channel_name + " " + channel->getTopic() + "\r\n";
                             send(clientFileD, topicMessage.c_str(), topicMessage.size(), 0);
                         }
                     }
@@ -543,6 +553,12 @@ void server::ClientRecv( int clientFileD ) {
                     if ( channel == NULL ){
                         handleNumReps( clientFileD, 403, channel_name ); //ERR_NOSUCHCHANNEL
                     }
+                    else if (channel->clientExist(nick) == false){
+                        handleNumReps( clientFileD, 442, nick ); //ERR_NOTONCHANNEL
+                    }
+                    else if (channel->isOperator(nick) == false){
+                        handleNumReps( clientFileD, 482, nick ); //ERR_CHANOPRIVSNEEDED
+                    }
                     else {
                         if (modes.length() != 2)
                             handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
@@ -551,10 +567,7 @@ void server::ClientRecv( int clientFileD ) {
                         else if (modes[0] != '+' && modes[0] != '-')
                             handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
                         else if (channel->validMode(modes[1]) == false)
-                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG
-                        else if (channel->isOperator(nick) == false) {
-                            handleNumReps( clientFileD, 482, channel_name ); //ERR_CHANOPRIVSNEEDED
-                        }
+                            handleNumReps( clientFileD, 501, line ); //ERR_UMODEUNKNOWNFLAG 
                         else if (modes[0] == '+' && modes[1] == 'i' && channel->isModeSet("i") == false)
                         {
                             channel->addMode('i');
@@ -575,8 +588,9 @@ void server::ClientRecv( int clientFileD ) {
                         {
                             if (channel->clientExist(msg[2]) == false)
                                 handleNumReps(clientFileD, 441, msg[2]); //ERR_USERNOTINCHANNEL
-                            else if (channel->isOperator(msg[2]) == true)
-                                handleNumReps(clientFileD, 482, msg[2]); //ERR_CHANOPRIVSNEEDED
+                            else if (channel->isOperator(nick) == true){
+                                // do nothing
+                            }
                             else {
                                 channel->addOperator(msg[2]);
                                 message = ":" + nick + "!" + username + "@" + hostname + " MODE " + channel_name + " +o " + msg[2] + "\r\n";
@@ -707,8 +721,13 @@ void server::ClientRecv( int clientFileD ) {
                     msg = "Channels Available: \r\n";
                     send( clientFileD, msg.c_str(), msg.size(), 0 );
                     for (std::vector<Channel>::iterator it = Channels.begin(); it != Channels.end(); it++){
-                        msg = "- " + it->getName() + "\r\n";
-                        send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        if (!it->getName().empty()){
+                            msg = "- " + it->getName() + "\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        } else {
+                            msg = "- No Channels Available\r\n";
+                            send( clientFileD, msg.c_str(), msg.size(), 0 );
+                        }
                     }
                 } else if (option[0] == "-cu" && option.size() == 2) {
                     Channel* channel = searchChannel( option[1] );
@@ -751,11 +770,11 @@ void server::ClientRecv( int clientFileD ) {
                             msg += "- Mode (t) : Topic Set\r\n";
                         } if (channel->isModeSet("o"))
                         {
-                            msg += "- Mode (o) : Operators [";
+                            msg += "- Mode (o) : Operators ";
                             for (std::vector<std::string>::iterator it = channel->getOperators().begin(); it != channel->getOperators().end(); it++){
-                                msg += *it + " ";
+                                msg += "[ " + *it + " ]\n";
                             }
-                            msg += "]\r\n";
+                            msg += "\r\n";
                         } if (channel->isModeSet("k")) {
                             msg += "- Mode (k) : Password Set\r\n";
                         } if (channel->isModeSet("l")) {

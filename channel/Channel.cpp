@@ -2,7 +2,7 @@
 
 Channel::Channel(std::string const &name) : _name(name), _channel_password(""),_limit(-1){
     _clientList.clear();
-    _kicked_users.clear();
+    // _kicked_users.clear();
     _invited.clear();
     _operators.clear();
     _mode.clear();
@@ -17,7 +17,7 @@ size_t& Channel::getCapacityLimit() {return _limit;}
 std::vector<std::string>& Channel::getMode() {return _mode;}
 std::vector<std::string>& Channel::getOperators() {return _operators;}
 std::map <std::string, Client>& Channel::getClientList() {return _clientList;}
-std::vector<std::string>& Channel::getKickedUsers() {return _kicked_users;}
+// std::vector<std::string>& Channel::getKickedUsers() {return _kicked_users;}
 std::vector<std::string>& Channel::getInvitedUsers() {return _invited;}
 
 void Channel::setTopic(std::string& newTopic) {_topic = newTopic;}
@@ -47,16 +47,16 @@ void	Channel::removeClientFromChannel(std::string &clientName)
 
 /* Clients status */
 
-void	Channel::addToKicked(std::string &kicked_name)
-{
-	std::vector<std::string>::iterator it;
-	for (it = _kicked_users.begin(); it != _kicked_users.end(); it++)
-	{
-		if (*it == kicked_name)
-			return ;
-	}
-	_kicked_users.push_back(kicked_name);
-}
+// void	Channel::addToKicked(std::string &kicked_name)
+// {
+// 	std::vector<std::string>::iterator it;
+// 	for (it = _kicked_users.begin(); it != _kicked_users.end(); it++)
+// 	{
+// 		if (*it == kicked_name)
+// 			return ;
+// 	}
+// 	_kicked_users.push_back(kicked_name);
+// }
 
 void    Channel::addInvited(std::string &invited_name)
 {
@@ -81,9 +81,20 @@ bool    Channel::isInvited(std::string &invited_name)
 }
 
 /* Operators */
-void Channel::addFirstOperator(std::string operatorName)
+
+void Channel::addOperator(std::string operatorName)
 {
-    _operators.push_back(operatorName);
+    std::vector<std::string>::iterator it;
+    if (_operators.size() == 0)
+        _operators.push_back(operatorName);
+    else {
+        for (it = _operators.begin(); it != _operators.end(); it++)
+        {
+            if (*it == operatorName)
+                return ;
+        }
+        _operators.push_back(operatorName);
+    }
 }
 
 bool Channel::isOperator(std::string &operatorName)
@@ -108,21 +119,12 @@ void Channel::removeOperator(std::string operatoName){
     }
 }
 
-void Channel::addOperator(std::string operatorName)
-{
-    std::vector<std::string>::iterator it;
-    for (it = _operators.begin(); it != _operators.end(); it++){
-        if (*it == operatorName)
-            return ;
-    }
-    _operators.push_back(operatorName);
-}
 
 /* Modes */
 
 void Channel::addMode( char mode)
 {
-    std::string app;
+    std::string app = "";
     if (mode == 'i')
         app = "i";
     else if (mode == 'o')
@@ -133,8 +135,7 @@ void Channel::addMode( char mode)
         app = "k";
     else if (mode == 't')
         app = "t";
-    std::string tmp = "" + app;
-    _mode.push_back(tmp);
+    _mode.push_back(app);
 }
 
 bool Channel::validMode( char const mode )
@@ -169,12 +170,12 @@ bool Channel::isModeSet( std::string const mode )
 void Channel::removeChannel()
 {
     _clientList.clear();
-    _kicked_users.clear();
+    // _kicked_users.clear();
     _invited.clear();
     _operators.clear();
     _mode.clear();
     _name.clear();
-    _operatorPassword.clear();
+    // _operatorPassword.clear();
     _topic.clear();
     _channel_password.clear();
     _limit = -1;

@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:16 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/05 17:34:52 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/09 17:19:00 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@ Client::Client( int _fd, std::string _passwd ): fd_client( _fd ), clPasswd( _pas
     auth[0] = false;
     auth[1] = false;
     auth[2] = false;
-    operat = false;
+    // operat = false;
     regist = false;
     iMode = false;
 }
@@ -31,7 +31,7 @@ Client::~Client() {}
 void Client::setNickName( std::string nick ) { this->nickName = nick; }
 void Client::setUserName( std::string uName ) { this->userName = uName; }
 void Client::setBuffer( std::string buff ) { this->buffer += buff; }
-void Client::setOperator( bool is_operator ) { this->operat = is_operator; }
+// void Client::setOperator( bool is_operator ) { this->operat = is_operator; }
 void Client::setRegistration( bool is_regist ) { this->regist = is_regist; }
 void Client::setiMode( bool is_iMode ) { this->iMode = is_iMode; }
 void Client::setFd( int fd ) { this->fd_client = fd; }
@@ -44,7 +44,7 @@ std::string Client::getNickName() { return this->nickName; }
 std::string Client::getUserName() { return this->userName; }
 std::string Client::getBuffer() { return this->buffer; }
 int Client::getFd() { return this->fd_client; }
-bool Client::getOperator() { return this->operat; }
+// bool Client::getOperator() { return this->operat; }
 bool Client::getRegistration() { return this->regist; }
 int Client::getChanLimit() { return this->chan_limit; }
 void Client::addJoindChan() { this->chan_limit++; }

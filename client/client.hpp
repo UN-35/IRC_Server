@@ -6,7 +6,7 @@
 /*   By: aakhtab <aakhtab@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/05/14 15:42:13 by yoelansa          #+#    #+#             */
-/*   Updated: 2024/10/05 17:35:02 by aakhtab          ###   ########.fr       */
+/*   Updated: 2024/10/09 17:19:36 by aakhtab          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ class Client {
         int fd_client;
         std::string clPasswd;
 
-        bool operat;
+        // bool operat;
         bool regist;
         int  chan_limit;
         bool iMode;
@@ -40,7 +40,7 @@ class Client {
         void setFd( int fd );
         void setUserName( std::string uName );
         void setBuffer( std::string buff );
-        void setOperator( bool is_operator );
+        // void setOperator( bool is_operator );
         void setRegistration( bool is_regist );
         void setiMode( bool is_iMode );
         void setChanLimit( int limit );
@@ -50,7 +50,7 @@ class Client {
         std::string getNickName();
         std::string getUserName();
         std::string getBuffer();
-        bool getOperator();
+        // bool getOperator();
         bool getiMode();
         bool getRegistration();
         int getFd();
