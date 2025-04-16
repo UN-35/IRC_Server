@@ -134,7 +134,7 @@ This project was developed by:
 
 ## 📜 License
 
-This project is part of the curriculum at [42 School](https://42.fr/) and is released under the MIT License.
+This project is part of the curriculum at [1337 School](https://1337.ma/) (part of the [42 Network](https://42.fr/)) and is released under the MIT License.
 
 ## 📚 Additional Resources
 
